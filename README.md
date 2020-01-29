@@ -71,7 +71,7 @@ cabal run orbits
 The `ghci` and `:kind!` command in there are your friends!
 
 Source also contains a lot of examples, see
-[fcf-containers](https://github.com/gspia/fcf-containers/src).
+[fcf-containers](https://github.com/gspia/fcf-containers/tree/master/src/Fcf).
 
 
 Happy :kinding!
