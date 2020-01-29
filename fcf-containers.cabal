@@ -15,7 +15,7 @@ License-file:        LICENSE
 Category:            Other
 Copyright:           gspia (c) 2020-
 Extra-source-files:  README.md, TODO.md, CHANGELOG.md, default.nix, shell.nix
-Cabal-version:       >=1.24
+Cabal-version:       1.24
 
 library
   hs-source-dirs:    src
@@ -43,7 +43,6 @@ Executable orbits
                   , Fcf.Data.Tree
   build-depends:    base
                   , first-class-families
-                  , fcf-containers
   -- ghc-options:
      --  -ddump-simpl
      --  -O2
@@ -56,7 +55,6 @@ Executable orbits
 --   build-depends:
 --       base
 --     , first-class-families
---     , fcf-containers
 
 test-suite fcf-doctest
   type:                exitcode-stdio-1.0

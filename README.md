@@ -9,7 +9,8 @@ These methods are based on the idea given in the
 or Fcf shortly. Fcf is the main dependency of fcf-containers. As some of the
 methods fit badly under the name "fcf-containers", they might end up into 
 the Fcf or some other package to be created. So stay tuned, be patient, check 
-the [TODO.md](./TODO.md) and send those PR's :)
+the [TODO.md](https://github.com/gspia/fcf-containers/blob/master/TODO.md) 
+and send those PR's :)
 
 
 Motivation for calculating things on type-level or on compile-time 
@@ -38,7 +39,7 @@ exactly.
 
 
 There are lot of open interesting questions. See 
-[TODO.md](./TODO.md) file. E.g. how combine 
+[TODO.md](https://github.com/gspia/fcf-containers/blob/master/TODO.md) file. E.g. how combine 
 these techniques with singletons-lib and related techniques. 
 
 
@@ -61,7 +62,8 @@ package has almost as good number of dependencies as the first-class-families.
 
 ## Example
 
-See [Orbits.hs](./examples/Orbits.hs). It shows how to solve a real problem,
+See [Orbits.hs](https://github.com/gspia/fcf-containers/blob/master/examples/Orbits.hs). 
+It shows how to solve a real problem,
 what PRAGMAs are probably needed etc.
 
 ```
