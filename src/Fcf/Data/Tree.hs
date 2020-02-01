@@ -35,8 +35,7 @@ Many of the examples are from containers-package.
 module Fcf.Data.Tree where
 
 import           Fcf as Fcf
--- import           Fcf.Data.List as Fcf -- TODO start using on fcf 0.7
-import           Fcf.Alg.List as Fcf (Unfoldr,ConcatMap) -- TODO remove on fcf 0.7
+import           Fcf.Data.List as Fcf
 
 --------------------------------------------------------------------------------
 

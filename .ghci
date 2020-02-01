@@ -1,0 +1,15 @@
+:set -isrc
+:set prompt "> "
+
+:set -XDataKinds
+:set -XFlexibleInstances
+:set -XFunctionalDependencies
+:set -XKindSignatures
+:set -XPolyKinds
+:set -XScopedTypeVariables
+:set -XTypeApplications
+:set -XTypeFamilies
+:set -XTypeInType
+:set -XTypeOperators
+:set -XUndecidableInstances
+

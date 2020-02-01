@@ -41,8 +41,7 @@ import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
                      , Pure, TyEq, Length, Uncurry)
 import qualified Fcf as Fcf (Map, Foldr, Filter)
--- import           Fcf.Data.List (Elem) -- TODO: change on fcf 0.7
-import           Fcf.Alg.List (Elem) -- TODO: change on fcf 0.7
+import           Fcf.Data.List (Elem)
 
 import           Fcf.Alg.Morphism
 import qualified Fcf.Alg.List as Fcf (Partition)
@@ -52,8 +51,9 @@ import qualified Fcf.Alg.List as Fcf (Partition)
 -- For the doctests:
 
 -- $setup
--- >>> import Fcf ( type (>=), Pure1, Pure2 )
+-- >>> import           Fcf (type (>=))
 -- >>> import           Fcf.Data.Nat
+-- >>> import           Fcf.Data.Symbol (Symbol,Append)
 
 --------------------------------------------------------------------------------
 
@@ -71,8 +71,8 @@ data MapC k v = MapC [(k,v)]
 -- 
 -- __Example__
 -- 
--- >>> :kind! (Eval Empty :: MapC Nat TL.Symbol)
--- (Eval Empty :: MapC Nat TL.Symbol) :: MapC Nat TL.Symbol
+-- >>> :kind! (Eval Empty :: MapC Nat Symbol)
+-- (Eval Empty :: MapC Nat Symbol) :: MapC Nat Symbol
 -- = 'MapC '[]
 --
 -- >>> :kind! (Eval Empty :: MapC Int String)
@@ -88,7 +88,7 @@ type instance Eval Empty = 'MapC '[]
 -- __Example__
 -- 
 -- >>> :kind! Eval (Singleton 1 "haa")
--- Eval (Singleton 1 "haa") :: MapC Nat TL.Symbol
+-- Eval (Singleton 1 "haa") :: MapC Nat Symbol
 -- = 'MapC '[ '(1, "haa")]
 data Singleton :: k -> v -> Exp (MapC k v)
 type instance Eval (Singleton k v) = 'MapC '[ '(k,v)]
@@ -98,7 +98,7 @@ type instance Eval (Singleton k v) = 'MapC '[ '(k,v)]
 -- __Example__
 -- 
 -- >>> :kind! Eval (FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC Nat TL.Symbol
+-- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC Nat Symbol
 -- = 'MapC '[ '(1, "haa"), '(2, "hoo")]
 data FromList :: [(k,v)] -> Exp (MapC k v)
 type instance Eval (FromList lst) = 'MapC lst
@@ -109,7 +109,7 @@ type instance Eval (FromList lst) = 'MapC lst
 --
 -- >>> :kind! Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
 -- Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC 
---                                                                    Nat TL.Symbol
+--                                                                    Nat Symbol
 -- = 'MapC '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
 data Insert :: k -> v -> MapC k v -> Exp (MapC k v)
 type instance Eval (Insert k v ('MapC lst)) =
@@ -124,22 +124,18 @@ type instance Eval (Insert k v ('MapC lst)) =
 --
 -- __Example__
 -- 
--- >>> :kind! Eval (InsertWith (Pure2 TL.AppendSymbol) 5 "xxx" (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (InsertWith (Pure2 TL.AppendSymbol) 5 "xxx" (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                                                                 Nat 
---                                                                                                 TL.Symbol
+-- >>> :kind! Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                           Nat Symbol
 -- = 'MapC '[ '(5, "xxxa"), '(3, "b")]
 --
--- >>> :kind! Eval (InsertWith (Pure2 TL.AppendSymbol) 7 "xxx" (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (InsertWith (Pure2 TL.AppendSymbol) 7 "xxx" (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                                                                 Nat 
---                                                                                                 TL.Symbol
+-- >>> :kind! Eval (InsertWith Append 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (InsertWith Append 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                           Nat Symbol
 -- = 'MapC '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
---
--- >>> :kind! Eval (InsertWith (Pure2 TL.AppendSymbol) 5 "xxx" =<< Empty)
--- Eval (InsertWith (Pure2 TL.AppendSymbol) 5 "xxx" =<< Empty) :: MapC 
---                                                                  Nat TL.Symbol
--- = 'MapC '[ '(5, "xxx")]
+-- >>> :kind! Eval (InsertWith Append 7 "xxx" =<< Empty)
+-- Eval (InsertWith Append 7 "xxx" =<< Empty) :: MapC Nat Symbol
+-- = 'MapC '[ '(7, "xxx")]
 data InsertWith :: (v -> v -> Exp v) -> k -> v -> MapC k v -> Exp (MapC k v)
 type instance Eval (InsertWith f k v ('MapC lst)) =
     If (Eval (Elem k =<< Fcf.Map Fst lst))
@@ -158,18 +154,18 @@ type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
 -- 
 -- __Example__
 -- 
--- >>> :kind! Eval (Delete 5 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Delete 5 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                               Nat TL.Symbol
+-- >>> :kind! Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                          Nat Symbol
 -- = 'MapC '[ '(3, "b")]
 --
--- >>> :kind! Eval (Delete 7 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Delete 7 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                               Nat TL.Symbol
+-- >>> :kind! Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                          Nat Symbol
 -- = 'MapC '[ '(5, "a"), '(3, "b")]
 --
--- >>> :kind! Eval (Delete 7 (Eval Empty))
--- Eval (Delete 7 (Eval Empty)) :: MapC Nat v
+-- >>> :kind! Eval (Delete 7 =<< Empty)
+-- Eval (Delete 7 =<< Empty) :: MapC Nat v
 -- = 'MapC '[]
 data Delete :: k -> MapC k v -> Exp (MapC k v)
 type instance Eval (Delete k ('MapC lst)) =
@@ -179,21 +175,18 @@ type instance Eval (Delete k ('MapC lst)) =
 -- 
 -- __Example__
 -- 
--- >>> :kind! Eval (Adjust (Pure1 (TL.AppendSymbol "new ")) 5 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Adjust (Pure1 (TL.AppendSymbol "new ")) 5 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                                                                Nat 
---                                                                                                TL.Symbol
+-- >>> :kind! Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                          Nat Symbol
 -- = 'MapC '[ '(5, "new a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (Pure1 (TL.AppendSymbol "new ")) 7 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Adjust (Pure1 (TL.AppendSymbol "new ")) 7 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: MapC 
---                                                                                                Nat 
---                                                                                                TL.Symbol
+-- >>> :kind! Eval (Adjust (Append "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Adjust (Append "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                          Nat Symbol
 -- = 'MapC '[ '(5, "a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (Pure1 (TL.AppendSymbol "new "))  7 (Eval Empty))
--- Eval (Adjust (Pure1 (TL.AppendSymbol "new "))  7 (Eval Empty)) :: MapC 
---                                                                     Nat TL.Symbol
+-- >>> :kind! Eval (Adjust (Append "new ") 7 =<< Empty)
+-- Eval (Adjust (Append "new ") 7 =<< Empty) :: MapC Nat Symbol
 -- = 'MapC '[]
 data Adjust :: (v -> Exp v) -> k -> MapC k v -> Exp (MapC k v)
 type instance Eval (Adjust f k ('MapC lst)) =
@@ -211,14 +204,12 @@ type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
 --
 -- __Example__
 -- 
--- >>> :kind! Eval (Lookup 5 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Lookup 5 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Maybe 
---                                                               TL.Symbol
+-- >>> :kind! Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe Symbol
 -- = 'Just "a"
 --
--- >>> :kind! Eval (Lookup 7 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Lookup 7 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Maybe 
---                                                               TL.Symbol
+-- >>> :kind! Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe Symbol
 -- = 'Nothing
 data Lookup :: k -> MapC k v -> Exp (Maybe v)
 type instance Eval (Lookup k ('MapC '[])) = 'Nothing
@@ -232,11 +223,11 @@ type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
 --
 -- __Example__
 -- 
--- >>> :kind! Eval (Member 5 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Member 5 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Bool
+-- >>> :kind! Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
--- >>> :kind! Eval (Member 7 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (Member 7 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Bool
+-- >>> :kind! Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
 data Member :: k -> MapC k v -> Exp Bool
 type instance Eval (Member k mp) =
@@ -246,11 +237,11 @@ type instance Eval (Member k mp) =
 --
 -- __Example__
 -- 
--- >>> :kind! Eval (NotMember 5 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (NotMember 5 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Bool
+-- >>> :kind! Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
--- >>> :kind! Eval (NotMember 7 (Eval (FromList '[ '(5,"a"), '(3,"b")])))
--- Eval (NotMember 7 (Eval (FromList '[ '(5,"a"), '(3,"b")]))) :: Bool
+-- >>> :kind! Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
 data NotMember :: k -> MapC k v -> Exp Bool
 type instance Eval (NotMember k mp) =
@@ -287,7 +278,7 @@ type instance Eval (Size ('MapC lst)) = Eval (Length lst)
 -- >>> :kind! Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) )
 -- Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) ) :: MapC 
 --                                                                                                      Nat 
---                                                                                                      TL.Symbol
+--                                                                                                      Symbol
 -- = 'MapC '[ '(7, "c"), '(5, "a"), '(3, "b")]
 data Union :: MapC k v -> MapC k v -> Exp (MapC k v)
 type instance Eval (Union ('MapC lst1) ('MapC lst2)) =
@@ -307,7 +298,7 @@ type instance Eval (UComb '(k,v) lst) =
 -- >>> :kind! Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC 
 --                                                                                                          Nat 
---                                                                                                          TL.Symbol
+--                                                                                                          Symbol
 -- = 'MapC '[ '(3, "a")]
 data Difference :: MapC k v -> MapC k v -> Exp (MapC k v)
 type instance Eval (Difference mp1 mp2) =
@@ -326,7 +317,7 @@ type instance Eval (DiffNotMem mp k _) =
 -- >>> :kind! Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC 
 --                                                                                                            Nat 
---                                                                                                            TL.Symbol
+--                                                                                                            Symbol
 -- = 'MapC '[ '(5, "b")]
 data Intersection :: MapC k v -> MapC k v -> Exp (MapC k v)
 type instance Eval (Intersection mp1 mp2) =
@@ -360,8 +351,8 @@ type instance Eval (Disjoint mp1 mp2) =
 --
 -- __Example__
 --
--- >>> :kind! Eval (Fcf.Data.MapC.Map (Pure1 (TL.AppendSymbol "x")) =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Fcf.Data.MapC.Map (Pure1 (TL.AppendSymbol "x")) =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC Nat TL.Symbol
+-- >>> :kind! Eval (Fcf.Data.MapC.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Fcf.Data.MapC.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC Nat Symbol
 -- = 'MapC '[ '(5, "xa"), '(3, "xb")]
 data Map :: (v -> Exp w) -> MapC k v -> Exp (MapC k w)
 type instance Eval (Map f mp) =
@@ -391,8 +382,8 @@ type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
 --
 -- __Example__
 -- 
--- >>> :kind! Eval (Fcf.Data.MapC.Foldr (Pure2 (TL.+)) 0  =<< (FromList '[ '(1,1), '(2,2)]))
--- Eval (Fcf.Data.MapC.Foldr (Pure2 (TL.+)) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: Nat
+-- >>> :kind! Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
+-- Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: Nat
 -- = 3
 data Foldr :: (v -> w -> Exp w) -> w -> MapC k v -> Exp w
 type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
@@ -403,7 +394,7 @@ type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
 -- __Example__
 -- 
 -- >>> :kind! Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [TL.Symbol]
+-- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [Symbol]
 -- = '["a", "b"]
 -- >>> :kind! Eval (Elems =<< Empty)
 -- Eval (Elems =<< Empty) :: [v]
@@ -430,7 +421,7 @@ type instance Eval (Keys ('MapC lst)) = Eval (Fcf.Map Fst lst)
 -- 
 -- >>> :kind! Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
---                                                        TL.Symbol)]
+--                                                        Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
 -- >>> :kind! Eval (Assocs =<< Empty)
 -- Eval (Assocs =<< Empty) :: [(k, v)]
@@ -444,7 +435,7 @@ type instance Eval (Assocs ('MapC lst)) = lst
 -- 
 -- >>> :kind! Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
---                                                        TL.Symbol)]
+--                                                        Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
 -- >>> :kind! Eval (ToList =<< Empty)
 -- Eval (ToList =<< Empty) :: [(k, v)]
@@ -468,9 +459,9 @@ type instance Eval (Filter f ('MapC lst)) =
 --
 -- __Example__
 --
--- >>> :kind! Eval (FilterWithKey (>=) (Eval (FromList '[ '(3,5), '(6,4)])))
--- Eval (FilterWithKey (>=) (Eval (FromList '[ '(3,5), '(6,4)]))) :: MapC 
---                                                                     Nat Nat
+-- >>> :kind! Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)])
+-- Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)]) :: MapC
+--                                                                Nat Nat
 -- = 'MapC '[ '(6, 4)]
 data FilterWithKey :: (k -> v -> Exp Bool) -> MapC k v -> Exp (MapC k v)
 type instance Eval (FilterWithKey f ('MapC lst)) =

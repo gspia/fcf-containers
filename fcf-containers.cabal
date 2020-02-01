@@ -16,17 +16,19 @@ Category:            Other
 Copyright:           gspia (c) 2020-
 Extra-source-files:  README.md, TODO.md, CHANGELOG.md, default.nix, shell.nix
 Cabal-version:       1.24
+Tested-With:         GHC ==8.8.1 || ==8.6.5 || ==8.4.4 || ==8.2.2
 
 library
   hs-source-dirs:    src
   exposed-modules:   Fcf.Data.MapC
                    , Fcf.Data.Tree
                    , Fcf.Data.Set
+                   , Fcf.Data.Symbol
                    , Fcf.Alg.List
                    , Fcf.Alg.Tree
                    , Fcf.Alg.Morphism
-  build-depends:     base >= 4.9 && < 4.13
-                   , first-class-families >= 0.6 && < 0.7
+  build-depends:     base >= 4.9 && < 4.14
+                   , first-class-families >= 0.7 && < 0.8
   ghc-options:      -Wall
   default-language:  Haskell2010
   -- ghc-options:
