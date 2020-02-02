@@ -8,6 +8,7 @@
    (less parenthesis and easier to read this way)
  - format the documentation a bit
  - add PowerSet and ToList into Set-module
+ - add new test module
 
 # 0.1.0
 
