@@ -1,4 +1,4 @@
-# fcf-containers
+# fcf-containers [![Hackage](https://img.shields.io/hackage/v/fcf-containers.svg)](https://hackage.haskell.org/package/fcf-containers) [![Build Status](https://travis-ci.org/gspia/fcf-containers.svg)](https://travis-ci.org/gspia/fcf-containers)
 
 Fcf-containers mimicks the containers package but for type-level computations. 
 That is, we provide e.g. trees and maps. In addition to that, this package 
