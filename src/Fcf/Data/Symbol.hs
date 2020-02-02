@@ -38,6 +38,7 @@ module Fcf.Data.Symbol
 
      -- * Comparison functions
 
+    , SymbolOrd
     , type (<=)
     , type (>=)
     , type (<)
@@ -97,6 +98,9 @@ type instance Eval (InterCalHelp s s1 s2) = Eval (Append (Eval (Append s s1)) s2
 
 --------------------------------------------------------------------------------
 
+
+data SymbolOrd :: Symbol -> Symbol -> Exp Ordering
+type instance Eval (SymbolOrd a b) = TL.CmpSymbol a b
 
 -- | Less-than-or-equal comparison for symbols.
 -- 

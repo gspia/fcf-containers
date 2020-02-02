@@ -157,6 +157,5 @@ type instance Eval (All lst) = Eval (Foldr (&&) 'True lst)
 data Any :: [Bool] -> Exp Bool
 type instance Eval (Any lst) = Eval (Foldr (||) 'False lst)
 
-
-
+--------------------------------------------------------------------------------
 

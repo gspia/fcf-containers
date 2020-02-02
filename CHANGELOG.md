@@ -1,4 +1,9 @@
 
+# 0.3.0
+
+ - a separate Sort module
+ - add possibility to sort a list of lists
+
 # 0.2.0
 
  - remove the methods that can be found from fcf 0.7.0

@@ -25,6 +25,7 @@ library
                    , Fcf.Data.Set
                    , Fcf.Data.Symbol
                    , Fcf.Alg.List
+                   , Fcf.Alg.Sort
                    , Fcf.Alg.Tree
                    , Fcf.Alg.Morphism
   build-depends:     base >= 4.9 && < 4.14

@@ -75,6 +75,7 @@ import           Fcf.Alg.Morphism
 -- >>> import qualified GHC.TypeLits as TL
 -- >>> import           Fcf.Data.Nat
 -- >>> import           Fcf.Data.Symbol
+-- >>> import           Fcf.Alg.Sort
 
 --------------------------------------------------------------------------------
 
@@ -281,7 +282,7 @@ type instance Eval (SelectWithBools elms bls) =
     Eval (Concat =<< ZipWith SelWithBool elms bls)
 
 -- | Calculate the power sets of a given type-level list. The algorithm is based 
--- Gray codes.
+-- on Gray codes.
 --
 -- === __Example__
 --
@@ -325,6 +326,10 @@ type instance Eval (FromList lst) = 'Set lst
 -- Eval (ToList =<< PowerSet =<< FromList '[1,2,3]) :: [Set Nat]
 -- = '[ 'Set '[], 'Set '[3], 'Set '[2], 'Set '[2, 3], 'Set '[1],
 --      'Set '[1, 2], 'Set '[1, 3], 'Set '[1, 2, 3]]
+--
+-- >>> :kind! Eval (Qsort NatListOrd =<< Map ToList =<< ToList =<< PowerSet =<< FromList '[1,2,3])
+-- Eval (Qsort NatListOrd =<< Map ToList =<< ToList =<< PowerSet =<< FromList '[1,2,3]) :: [[Nat]]
+-- = '[ '[], '[1], '[1, 2], '[1, 2, 3], '[1, 3], '[2], '[2, 3], '[3]]
 data ToList :: Set v -> Exp [v]
 type instance Eval (ToList ('Set lst)) = lst
 
