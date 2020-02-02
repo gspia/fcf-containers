@@ -28,16 +28,44 @@ is based on lists. We hope that a more efficient one will be used one day.
 
 --------------------------------------------------------------------------------
 
-module Fcf.Data.Set where
+module Fcf.Data.Set
+    ( Set (..)
+
+    -- * Query
+    , Member
+    , NotMember
+    , Null
+    , Size
+      
+    -- * Construction
+    , Empty
+    , Singleton
+    , Insert
+    , Delete
+    , PowerSet
+
+    -- * Combine
+    , Union
+    , Difference
+    , Intersection
+
+    -- * List
+    , FromList
+    , ToList
+    )
+  where
 
 import qualified GHC.TypeLits as TL
 
 import           Fcf ( Eval, Exp, type (=<<), type (<=<)
-                     , Not, If
-                     , TyEq, Length)
--- import           Fcf.Data.List as Fcf
+                     , Not, If, Map, TyEq )
 import qualified Fcf as Fcf (Foldr, Filter)
-import           Fcf.Data.List (Elem)
+import           Fcf.Data.List ( Elem, Cons, Concat, Reverse, Length, type (++)
+                               , ZipWith, Replicate)
+
+
+import           Fcf.Alg.List
+import           Fcf.Alg.Morphism
 
 --------------------------------------------------------------------------------
 
@@ -46,15 +74,18 @@ import           Fcf.Data.List (Elem)
 -- $setup
 -- >>> import qualified GHC.TypeLits as TL
 -- >>> import           Fcf.Data.Nat
+-- >>> import           Fcf.Data.Symbol
 
 --------------------------------------------------------------------------------
 
 -- | Set-definition.
 data Set a = Set [a]
 
+
+
 -- | Empty
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! (Eval Empty :: Set Nat)
 -- (Eval Empty :: Set Nat) :: Set Nat
@@ -66,7 +97,7 @@ type instance Eval Empty = 'Set '[]
 
 -- | Singleton
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Singleton 1)
 -- Eval (Singleton 1) :: Set Nat
@@ -74,20 +105,10 @@ type instance Eval Empty = 'Set '[]
 data Singleton :: v -> Exp (Set v)
 type instance Eval (Singleton v) = 'Set '[v]
 
--- | Use FromList to construct a Set from type-level list.
---
--- __Example__
--- 
--- >>> :kind! Eval (FromList '[1, 2])
--- Eval (FromList '[1, 2]) :: Set Nat
--- = 'Set '[1, 2]
-data FromList :: [v] -> Exp (Set v)
-type instance Eval (FromList lst) = 'Set lst
-
 
 -- | Insert
 --
--- __Example__
+-- === __Example__
 --
 -- >>> :kind! Eval (Insert 3 =<< FromList '[1, 2])
 -- Eval (Insert 3 =<< FromList '[1, 2]) :: Set Nat
@@ -104,7 +125,7 @@ type instance Eval (Insert v ('Set lst)) =
 
 -- | Delete
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Delete 5 =<< FromList '[5, 3])
 -- Eval (Delete 5 =<< FromList '[5, 3]) :: Set Nat
@@ -119,7 +140,7 @@ type instance Eval (Delete v ('Set lst)) =
 
 -- | Member
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Member 5 =<< FromList '[5, 3])
 -- Eval (Member 5 =<< FromList '[5, 3]) :: Bool
@@ -132,7 +153,7 @@ type instance Eval (Member v ('Set lst)) = Eval (Elem v lst)
 
 -- | NotMember
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (NotMember 5 =<< FromList '[5, 3])
 -- Eval (NotMember 5 =<< FromList '[5, 3]) :: Bool
@@ -144,9 +165,10 @@ data NotMember :: v -> Set v -> Exp Bool
 type instance Eval (NotMember k ('Set lst)) =
     Eval (Not =<< Elem k lst)
 
+
 -- | Null
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Null =<< FromList '[5, 3])
 -- Eval (Null =<< FromList '[5, 3]) :: Bool
@@ -158,9 +180,10 @@ data Null :: Set v -> Exp Bool
 type instance Eval (Null ('Set '[])) = 'True
 type instance Eval (Null ('Set (_ ': _))) = 'False
 
+
 -- | Size
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Size =<< FromList '[5, 3])
 -- Eval (Size =<< FromList '[5, 3]) :: Nat
@@ -168,9 +191,10 @@ type instance Eval (Null ('Set (_ ': _))) = 'False
 data Size :: Set v -> Exp TL.Nat
 type instance Eval (Size ('Set lst)) = Eval (Length lst)
 
--- | Union
+
+-- | Type-level set union.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) )
 -- Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) ) :: Set 
@@ -187,9 +211,9 @@ type instance Eval (UComb v lst) =
         (v ': lst)
 
 
--- | Difference
+-- | Type-level set difference.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
 -- Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7]))) :: Set 
@@ -204,9 +228,9 @@ data DiffNotMem :: [v] -> v -> Exp Bool
 type instance Eval (DiffNotMem lst v) = Eval (Not =<< Elem v lst)
 
 
--- | Intersection
+-- | Type-level set intersection.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Intersection (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
 -- Eval (Intersection (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7]))) :: Set 
@@ -219,3 +243,89 @@ type instance Eval (Intersection ('Set lst1) ('Set lst2)) =
 -- helper
 data InterMem :: [v ]-> v -> Exp Bool
 type instance Eval (InterMem lst v) = Eval (Elem v lst)
+
+--------------------------------------------------------------------------------
+
+-- helper for PowerSet
+data AddFalses :: [[Bool]] -> Exp [[Bool]]
+type instance Eval (AddFalses lst) = Eval (Map (Cons 'False) lst)
+
+-- helper for PowerSet
+data AddTrues :: [[Bool]] -> Exp [[Bool]]
+type instance Eval (AddTrues lst) = Eval (Map (Cons 'True) lst)
+
+-- helper for PowerSet
+data ExtendBitList :: [[Bool]] -> Exp [[Bool]]
+type instance Eval (ExtendBitList lst) =
+    Eval ((Eval (AddFalses lst)) ++ (Eval (AddTrues =<< Map Reverse lst)))
+
+-- helper for PowerSet
+-- :kind! Eval (Cata BuildGrayBitListsAlg=<< ListToFix =<< Replicate 3 '[])
+data BuildGrayBitListsAlg :: Algebra (ListF [[Bool]]) [[Bool]]
+type instance Eval (BuildGrayBitListsAlg 'NilF) = '[ '[] ]
+type instance Eval (BuildGrayBitListsAlg ('ConsF _ lst)) = Eval (ExtendBitList lst)
+
+-- helper for PowerSet
+-- :kind! Eval (BuildGrayBitLists '[1,2,3,4])
+data BuildGrayBitLists :: [a] -> Exp [[Bool]]
+type instance Eval (BuildGrayBitLists lst) =
+    Eval (Cata BuildGrayBitListsAlg =<< ListToFix =<< Replicate (Eval (Length lst)) '[])
+
+-- helper for PowerSet
+data SelWithBool :: a -> Bool -> Exp [a]
+type instance Eval (SelWithBool a b) = If b '[a] '[]
+
+-- helper for PowerSet
+data SelectWithBools :: [a] -> [Bool] -> Exp [a]
+type instance Eval (SelectWithBools elms bls) =
+    Eval (Concat =<< ZipWith SelWithBool elms bls)
+
+-- | Calculate the power sets of a given type-level list. The algorithm is based 
+-- Gray codes.
+--
+-- === __Example__
+--
+-- >>> :kind! Eval (PowerSet =<< FromList '["a", "b", "c"])
+-- Eval (PowerSet =<< FromList '["a", "b", "c"]) :: Set (Set Symbol)
+-- = 'Set
+--     '[ 'Set '[], 'Set '["c"], 'Set '["b"], 'Set '["b", "c"],
+--        'Set '["a"], 'Set '["a", "b"], 'Set '["a", "c"],
+--        'Set '["a", "b", "c"]]
+--
+-- >>> :kind! Eval (PowerSet =<< FromList '[Int, Char, Maybe Int])
+-- Eval (PowerSet =<< FromList '[Int, Char, Maybe Int]) :: Set (Set *)
+-- = 'Set
+--     '[ 'Set '[], 'Set '[Maybe Int], 'Set '[Char],
+--        'Set '[Char, Maybe Int], 'Set '[Int], 'Set '[Int, Char],
+--        'Set '[Int, Maybe Int], 'Set '[Int, Char, Maybe Int]]
+--
+data PowerSet :: Set a -> Exp (Set (Set a))
+type instance Eval (PowerSet ('Set lst)) =
+    'Set (Eval (Map FromList
+               =<< Map (SelectWithBools lst)
+               =<< BuildGrayBitLists lst))
+
+--------------------------------------------------------------------------------
+
+-- | Use FromList to construct a Set from type-level list.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (FromList '[1, 2])
+-- Eval (FromList '[1, 2]) :: Set Nat
+-- = 'Set '[1, 2]
+data FromList :: [v] -> Exp (Set v)
+type instance Eval (FromList lst) = 'Set lst
+
+-- | Get the type-level list out of the 'Set'.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (ToList =<< PowerSet =<< FromList '[1,2,3])
+-- Eval (ToList =<< PowerSet =<< FromList '[1,2,3]) :: [Set Nat]
+-- = '[ 'Set '[], 'Set '[3], 'Set '[2], 'Set '[2, 3], 'Set '[1],
+--      'Set '[1, 2], 'Set '[1, 3], 'Set '[1, 2, 3]]
+data ToList :: Set v -> Exp [v]
+type instance Eval (ToList ('Set lst)) = lst
+
+

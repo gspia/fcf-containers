@@ -65,7 +65,7 @@ type instance Eval (FoldTree f ('Node a (x ': xs))) =
 
 -- | Unfold for a 'Tree'.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> data BuildNode :: Nat -> Exp (Nat,[Nat])
 -- >>> :{
@@ -92,7 +92,7 @@ type instance Eval (UnfoldForest f bs) = Eval (Map (UnfoldTree f) bs)
 
 -- | Flatten a 'Tree'.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Flatten ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]]))
 -- Eval (Flatten ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [Nat]
@@ -124,7 +124,7 @@ type instance Eval (SubFLevels (t ': ts)) =
 
 -- | Get the levels from a 'Tree'.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Levels ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]]))
 -- Eval (Levels ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [[Nat]]

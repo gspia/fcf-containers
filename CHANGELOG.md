@@ -6,6 +6,8 @@
  - add Fcf.Data.Symbol module (comparison + other functions)
  - change some of the examples from using Eval to use =<< operator
    (less parenthesis and easier to read this way)
+ - format the documentation a bit
+ - add PowerSet and ToList into Set-module
 
 # 0.1.0.0
 

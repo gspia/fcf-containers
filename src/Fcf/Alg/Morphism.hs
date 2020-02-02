@@ -64,7 +64,7 @@ type instance Eval (Cata alg ('Fix b)) = alg @@ (Eval (Map (Cata alg) b))
 
 -- | Ana can also be used to build a 'Fix' structure.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> data NToOneCoA :: CoAlgebra (ListF Nat) Nat
 -- >>> :{ 
@@ -85,7 +85,7 @@ type instance Eval (Ana coalg a) = 'Fix (Eval (Map (Ana coalg) (Eval (coalg a)))
 -- Hylomorphism uses first 'Ana' to build a structure (unfold) and then 'Cata'
 -- to process the structure (fold).
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> data NToOneCoA :: CoAlgebra (ListF Nat) Nat
 -- >>> :{ 
@@ -105,7 +105,7 @@ type instance Eval (Hylo alg coalg a) = Eval (Cata alg =<< Ana coalg a)
 
 -- | Type-level First. Tuples @(,)@ and @Either@ have First-instances.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (First ((+) 1) '(3,"a"))
 -- Eval (First ((+) 1) '(3,"a")) :: (Nat, TL.Symbol)
@@ -121,7 +121,7 @@ type instance Eval (First f ('Right b)) = 'Right b
 
 -- | Type-level Second. Tuples @(,)@ and @Either@ have Second-instances.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Second ((+) 1) '("a",3))
 -- Eval (Second ((+) 1) '("a",3)) :: (TL.Symbol, Nat)

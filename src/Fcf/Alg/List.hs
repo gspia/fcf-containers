@@ -29,10 +29,21 @@ module Fcf.Alg.List where
 
 import qualified GHC.TypeLits as TL
 
-import           Fcf
+import           Fcf.Core (Eval, Exp)
+import           Fcf.Classes (Map)
+import           Fcf.Data.List (Foldr)
+import           Fcf.Utils (If)
+import           Fcf.Data.Bool (type (&&), type  (||))
 import           Fcf.Data.Nat
 
 import           Fcf.Alg.Morphism
+
+--------------------------------------------------------------------------------
+
+-- For the doctests:
+
+-- $setup
+-- >>> import           Fcf.Combinators
 
 --------------------------------------------------------------------------------
 
@@ -86,7 +97,7 @@ type instance Eval (ProdAlg ('ConsF a b)) = a TL.* b
 
 -- | Sum a Nat-list.
 --
--- __Example__
+-- === __Example__
 --
 -- >>> :kind! Eval (Sum '[1,2,3])
 -- Eval (Sum '[1,2,3]) :: Nat
@@ -98,7 +109,7 @@ type instance Eval (Sum ns) = Eval (Foldr (+) 0 ns)
 
 -- | Partition
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Fcf.Alg.List.Partition ((>=) 35) '[ 20, 30, 40, 50])
 -- Eval (Fcf.Alg.List.Partition ((>=) 35) '[ 20, 30, 40, 50]) :: ([Nat],
@@ -107,10 +118,45 @@ type instance Eval (Sum ns) = Eval (Foldr (+) 0 ns)
 data Partition :: (a -> Exp Bool) -> [a] -> Exp ([a],[a])
 type instance Eval (Partition p lst) = Eval (Foldr (PartHelp p) '( '[], '[]) lst)
 
+-- helper
 data PartHelp :: (a -> Exp Bool) -> a -> ([a],[a]) -> Exp ([a],[a])
 type instance Eval (PartHelp p a '(xs,ys)) =
     If (Eval (p a))
         '(a ': xs, ys)
         '(xs, a ': ys)
+
+--------------------------------------------------------------------------------
+
+
+-- | Give true if all of the booleans in the list are true.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (All '[ 'True, 'True])
+-- Eval (All '[ 'True, 'True]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (All '[ 'True, 'True, 'False])
+-- Eval (All '[ 'True, 'True, 'False]) :: Bool
+-- = 'False
+data All :: [Bool] -> Exp Bool
+type instance Eval (All lst) = Eval (Foldr (&&) 'True lst)
+
+
+-- | Give true if any of the booleans in the list is true.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Any '[ 'True, 'True])
+-- Eval (Any '[ 'True, 'True]) :: Bool
+-- = 'True
+-- 
+-- >>> :kind! Eval (Any '[ 'False, 'False])
+-- Eval (Any '[ 'False, 'False]) :: Bool
+-- = 'False
+data Any :: [Bool] -> Exp Bool
+type instance Eval (Any lst) = Eval (Foldr (||) 'False lst)
+
+
 
 

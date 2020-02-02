@@ -62,7 +62,7 @@ import           Fcf.Combinators (type (=<<))
 
 -- | Append two type-level symbols.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Append "hmm" " ok")
 -- Eval (Append "hmm" " ok") :: Symbol
@@ -73,7 +73,7 @@ type instance Eval (Append s1 s2) = TL.AppendSymbol s1 s2
 
 -- | Intercalate type-level symbols.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Intercalate "+" '["aa", "bb", "cc"])
 -- Eval (Intercalate "+" '["aa", "bb", "cc"]) :: Symbol
@@ -100,7 +100,7 @@ type instance Eval (InterCalHelp s s1 s2) = Eval (Append (Eval (Append s s1)) s2
 
 -- | Less-than-or-equal comparison for symbols.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval ("b" <= "a")
 -- Eval ("b" <= "a") :: Bool
@@ -112,7 +112,7 @@ type instance Eval ((<=) a b) =
 
 -- | Larger-than-or-equal comparison for symbols.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval ("b" >= "a")
 -- Eval ("b" >= "a") :: Bool
@@ -123,7 +123,7 @@ type instance Eval ((>=) a b) =
 
 -- | Less-than comparison for symbols.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval ("a" < "b")
 -- Eval ("a" < "b") :: Bool
@@ -133,7 +133,7 @@ type instance Eval ((<) a b) = Eval (TyEq (TL.CmpSymbol a b) 'LT)
 
 -- | Larger-than comparison for symbols.
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval ("b" > "a")
 -- Eval ("b" > "a") :: Bool
@@ -143,7 +143,7 @@ type instance Eval ((>) a b) = Eval (TyEq (TL.CmpSymbol a b) 'GT)
 
 -- | Equality of symbols
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval ("b" == "a")
 -- Eval ("b" == "a") :: Bool

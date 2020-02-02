@@ -33,7 +33,48 @@ one used in the containers.
 
 --------------------------------------------------------------------------------
 
-module Fcf.Data.MapC where
+module Fcf.Data.MapC
+    ( -- * MapC type
+      MapC (..)
+
+    -- * Query
+    , Null
+    , Size
+    , Lookup
+    , Member
+    , NotMember
+    , Disjoint
+    , Elems
+    , Keys
+    , Assocs
+
+    -- * Construction
+    , Empty
+    , Singleton
+    , Insert
+    , InsertWith
+    , Delete
+
+    -- * Combine
+    , Union
+    , Difference
+    , Intersection
+
+    -- * Modify
+    , Adjust
+    , Map
+    , MapWithKey
+    , Foldr
+    , Filter
+    , FilterWithKey
+    , Partition
+
+    -- * List
+    , FromList
+    , ToList
+
+    )
+  where
 
 import qualified GHC.TypeLits as TL
 
@@ -69,7 +110,7 @@ data MapC k v = MapC [(k,v)]
 
 -- | Empty
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! (Eval Empty :: MapC Nat Symbol)
 -- (Eval Empty :: MapC Nat Symbol) :: MapC Nat Symbol
@@ -85,7 +126,7 @@ type instance Eval Empty = 'MapC '[]
 
 -- | Singleton
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Singleton 1 "haa")
 -- Eval (Singleton 1 "haa") :: MapC Nat Symbol
@@ -95,7 +136,7 @@ type instance Eval (Singleton k v) = 'MapC '[ '(k,v)]
 
 -- | Use FromList to construct a MapC from type-level list.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (FromList '[ '(1,"haa"), '(2,"hoo")])
 -- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC Nat Symbol
@@ -105,7 +146,7 @@ type instance Eval (FromList lst) = 'MapC lst
 
 -- | Insert
 --
--- __Example__
+-- === __Example__
 --
 -- >>> :kind! Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
 -- Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC 
@@ -122,7 +163,7 @@ type instance Eval (Insert k v ('MapC lst)) =
 -- if old there, map
 -- if no old, add
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
@@ -152,7 +193,7 @@ type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
 
 -- | Delete
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
@@ -173,7 +214,7 @@ type instance Eval (Delete k ('MapC lst)) =
 
 -- | Adjust
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
@@ -202,7 +243,7 @@ type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
 
 -- | Lookup
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe Symbol
@@ -221,7 +262,7 @@ type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
 
 -- | Member
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
@@ -235,7 +276,7 @@ type instance Eval (Member k mp) =
 
 -- | NotMember
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
@@ -249,7 +290,7 @@ type instance Eval (NotMember k mp) =
 
 -- | Null
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
@@ -263,7 +304,7 @@ type instance Eval (Null ('MapC (_ ': _))) = 'False
 
 -- | Size
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")]) :: Nat
@@ -273,7 +314,7 @@ type instance Eval (Size ('MapC lst)) = Eval (Length lst)
 
 -- | Union
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) )
 -- Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) ) :: MapC 
@@ -293,7 +334,7 @@ type instance Eval (UComb '(k,v) lst) =
 
 -- | Difference
 -- 
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC 
@@ -312,7 +353,7 @@ type instance Eval (DiffNotMem mp k _) =
 
 -- | Intersection
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC 
@@ -330,7 +371,7 @@ type instance Eval (InterMem mp k _) = Eval (Elem k =<< Keys mp)
 
 -- | Disjoint
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: Bool
@@ -349,7 +390,7 @@ type instance Eval (Disjoint mp1 mp2) =
 
 -- Map 
 --
--- __Example__
+-- === __Example__
 --
 -- >>> :kind! Eval (Fcf.Data.MapC.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Fcf.Data.MapC.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC Nat Symbol
@@ -360,7 +401,7 @@ type instance Eval (Map f mp) =
 
 -- MapWithKey 
 --
--- __Example__
+-- === __Example__
 -- 
 data MapWithKey :: (k -> v -> Exp w) -> MapC k v -> Exp (MapC k w)
 type instance Eval (MapWithKey f mp) =
@@ -380,7 +421,7 @@ type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
 --
 -- Note: the order of values in MapC is not well defined at the moment.
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
 -- Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: Nat
@@ -391,7 +432,7 @@ type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
 
 -- | Elems
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [Symbol]
@@ -404,7 +445,7 @@ type instance Eval (Elems ('MapC lst)) = Eval (Fcf.Map Snd lst)
 
 -- | Keys
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")]) :: [Nat]
@@ -417,7 +458,7 @@ type instance Eval (Keys ('MapC lst)) = Eval (Fcf.Map Fst lst)
 
 -- | Assocs
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
@@ -431,7 +472,7 @@ type instance Eval (Assocs ('MapC lst)) = lst
 
 -- | ToList
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
@@ -445,7 +486,7 @@ type instance Eval (ToList ('MapC lst)) = lst
 
 -- | Filter
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
 -- Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: MapC 
@@ -457,7 +498,7 @@ type instance Eval (Filter f ('MapC lst)) =
 
 -- | FilterWithKey
 --
--- __Example__
+-- === __Example__
 --
 -- >>> :kind! Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)])
 -- Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)]) :: MapC
@@ -469,7 +510,7 @@ type instance Eval (FilterWithKey f ('MapC lst)) =
 
 -- | Partition
 --
--- __Example__
+-- === __Example__
 -- 
 -- >>> :kind! Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
 -- Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: (MapC 

@@ -6,7 +6,7 @@ Description:
     contents of containers-package and show how these can be used. Everything is
     based on the ideas given in the first-class-families -package.
 Homepage:            https://github.com/gspia/fcf-containers
-Version:             0.1.0
+Version:             0.2.0
 Build-type:          Simple
 Author:              gspia
 Maintainer:          iahogsp@gmail.com
