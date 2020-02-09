@@ -21,6 +21,8 @@ Type-level symbols and functions for them.
 Note that the operators from this module conflict with "GHC.TypeLits".
 
 
+TODO: Would this whole module have a place first-class-families?
+
 -}
 
 --------------------------------------------------------------------------------
@@ -35,6 +37,11 @@ module Fcf.Data.Symbol
 
     , Append
     , Intercalate
+    , IsSpace
+    , IsNewLine
+    , IsTab
+    , IsSpaceDelim
+    , IsDigit
 
      -- * Comparison functions
 
@@ -53,7 +60,7 @@ import           GHC.TypeLits (Symbol)
 import qualified GHC.TypeLits as TL
 
 import           Fcf.Core (Eval, Exp)
-import           Fcf.Data.List (Foldr)
+import           Fcf.Data.List (Foldr, Elem)
 import           Fcf.Data.Bool (type (||))
 import           Fcf.Utils (TyEq)
 
@@ -96,9 +103,96 @@ type instance Eval (Intercalate s1 (s ': sLst)) =
 data InterCalHelp :: Symbol -> Symbol -> Symbol -> Exp Symbol
 type instance Eval (InterCalHelp s s1 s2) = Eval (Append (Eval (Append s s1)) s2)
 
+
+-- | IsSpace
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsSpace "a")
+-- Eval (IsSpace "a") :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsSpace " ")
+-- Eval (IsSpace " ") :: Bool
+-- = 'True
+data IsSpace :: Symbol -> Exp Bool
+type instance Eval (IsSpace s) = Eval (s == " ")
+
+
+-- | IsNewline
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsNewLine "a")
+-- Eval (IsNewLine "a") :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsNewLine "\n")
+-- Eval (IsNewLine "\n") :: Bool
+-- = 'True
+data IsNewLine :: Symbol -> Exp Bool
+type instance Eval (IsNewLine s) = Eval (s == "\n")
+
+
+-- | IsTab
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsTab "a")
+-- Eval (IsTab "a") :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsTab "\t")
+-- Eval (IsTab "\t") :: Bool
+-- = 'True
+data IsTab :: Symbol -> Exp Bool
+type instance Eval (IsTab s) = Eval (s == "\t")
+
+
+-- | IsSpaceDelim
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsSpaceDelim "a")
+-- Eval (IsSpaceDelim "a") :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsSpaceDelim "\n")
+-- Eval (IsSpaceDelim "\n") :: Bool
+-- = 'True
+data IsSpaceDelim :: Symbol -> Exp Bool
+type instance Eval (IsSpaceDelim s) =
+    Eval (Eval (IsSpace s) || (Eval (Eval (IsNewLine s) || Eval (IsTab s))))
+
+
+-- | IsDigit
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsDigit "3")
+-- Eval (IsDigit "3") :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsDigit "a")
+-- Eval (IsDigit "a") :: Bool
+-- = 'False
+data IsDigit :: Symbol -> Exp Bool
+type instance Eval (IsDigit s)
+    = Eval (Elem s '["0","1","2","3","4","5","6","7","8","9"])
+
+
+
 --------------------------------------------------------------------------------
 
 
+-- | SymbolOrd - compare two symbols and give type-level Ordering 
+-- ( $ 'LT $, $ 'EQ $ or $ 'GT $ ).
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (SymbolOrd "a" "b")
+-- Eval (SymbolOrd "a" "b") :: Ordering
+-- = 'LT
 data SymbolOrd :: Symbol -> Symbol -> Exp Ordering
 type instance Eval (SymbolOrd a b) = TL.CmpSymbol a b
 

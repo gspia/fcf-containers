@@ -45,6 +45,7 @@ import           Fcf.Data.Symbol (Symbol, SymbolOrd)
 
 --------------------------------------------------------------------------------
 
+-- helper for the ListCmp
 data ListCmpFnd :: [Ordering] -> Exp Ordering
 type instance Eval (ListCmpFnd '[]) = 'EQ
 type instance Eval (ListCmpFnd (a ': as)) = Eval
@@ -53,10 +54,12 @@ type instance Eval (ListCmpFnd (a ': as)) = Eval
         (Pure a)
     )
 
-
+-- | Compare lists with the given comparison for the elements.
 data ListCmp :: (a -> a -> Exp Ordering) -> [a] -> [a] -> Exp Ordering
 type instance Eval (ListCmp f as bs) = Eval (ListCmpFnd =<< ZipWith f as bs)
 
+-- | Give true if the first list is before the second, given the comparison
+-- function for the elements.
 data ListOrd :: (a -> a -> Exp Ordering) -> [a] -> [a] -> Exp Bool
 type instance Eval (ListOrd f as bs) = Eval
     (If (Eval (TyEq 'LT (Eval (ListCmp f as bs))))
@@ -64,15 +67,21 @@ type instance Eval (ListOrd f as bs) = Eval
         (Pure 'False)
     )
 
--- To Fcf.Data.Nat ??
+-- | Comparison for the Nats.
+-- 
+-- TODO: Would this fit to Fcf.Data.Nat on first-class-families?
 data NatOrd :: Nat -> Nat -> Exp Ordering
 type instance Eval (NatOrd a b) = TL.CmpNat a b
 
--- | Useful when sorting with Qsort.
+-- | Comparison for Symbol lists.
+--
+-- Useful when sorting with Qsort.
 data SymbolListOrd :: [Symbol] -> [Symbol] -> Exp Bool
 type instance Eval (SymbolListOrd as bs) = Eval (ListOrd SymbolOrd as bs)
 
--- | Useful when sorting with Qsort.
+-- | Comparison for Nat lists.
+--
+-- Useful when sorting with Qsort.
 data NatListOrd :: [Nat] -> [Nat] -> Exp Bool
 type instance Eval (NatListOrd as bs) = Eval (ListOrd NatOrd as bs)
 

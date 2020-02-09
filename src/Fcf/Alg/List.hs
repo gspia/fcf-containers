@@ -29,11 +29,12 @@ module Fcf.Alg.List where
 
 import qualified GHC.TypeLits as TL
 
-import           Fcf.Core (Eval, Exp)
+import           Fcf.Core (Eval, Exp, type (@@))
 import           Fcf.Classes (Map)
-import           Fcf.Data.List (Foldr)
-import           Fcf.Utils (If)
-import           Fcf.Data.Bool (type (&&), type  (||))
+import           Fcf.Combinators (type (=<<))
+import           Fcf.Data.List (Foldr, Concat, TakeWhile, DropWhile, Reverse, type (++))
+import           Fcf.Utils (If, TyEq)
+import           Fcf.Data.Bool (type (&&), type  (||), Not)
 import           Fcf.Data.Nat
 
 import           Fcf.Alg.Morphism
@@ -125,6 +126,165 @@ type instance Eval (PartHelp p a '(xs,ys)) =
         '(a ': xs, ys)
         '(xs, a ': ys)
 
+-- | Intersperse for type-level lists.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Intersperse 0 '[1,2,3,4])
+-- Eval (Intersperse 0 '[1,2,3,4]) :: [Nat]
+-- = '[1, 0, 2, 0, 3, 0, 4]
+data Intersperse :: a -> [a] -> Exp [a]
+type instance Eval (Intersperse _   '[]      ) = '[]
+type instance Eval (Intersperse sep (x ': xs)) = x ': Eval (PrependToAll sep xs)
+
+-- helper for Intersperse
+data PrependToAll :: a -> [a] -> Exp [a]
+type instance Eval (PrependToAll _   '[]      ) = '[]
+type instance Eval (PrependToAll sep (x ': xs)) = sep ': x ': Eval (PrependToAll sep xs)
+
+-- | Intercalate for type-level lists.
+-- 
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Intercalate '[", "] '[ '["Lorem"], '["ipsum"], '["dolor"] ])
+-- Eval (Intercalate '[", "] '[ '["Lorem"], '["ipsum"], '["dolor"] ]) :: [TL.Symbol]
+-- = '["Lorem", ", ", "ipsum", ", ", "dolor"]
+data Intercalate :: [a] -> [[a]] -> Exp [a]
+type instance Eval (Intercalate xs xss) = Eval (Concat =<< Intersperse xs xss)
+
+
+-- | 'Span', applied to a predicate @p@ and a type-level list @xs@, returns a 
+-- type-level tuple where
+-- first element is longest prefix (possibly empty) of @xs@ of elements that
+-- satisfy @p@ and second element is the remainder of the list:
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Span (Flip (<) 3) '[1,2,3,4,1,2,3,4])
+-- Eval (Span (Flip (<) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat])
+-- = '( '[1, 2], '[3, 4, 1, 2, 3, 4])
+--
+-- >>> :kind! Eval (Span (Flip (<) 9) '[1,2,3])
+-- Eval (Span (Flip (<) 9) '[1,2,3]) :: ([Nat], [Nat])
+-- = '( '[1, 2, 3], '[])
+--
+-- >>> :kind! Eval (Span (Flip (<) 0) '[1,2,3])
+-- Eval (Span (Flip (<) 0) '[1,2,3]) :: ([Nat], [Nat])
+-- = '( '[], '[1, 2, 3])
+data Span :: (a -> Exp Bool) -> [a] -> Exp ([a],[a])
+type instance Eval (Span p lst) = '( Eval (TakeWhile p lst), Eval (DropWhile p lst))
+
+
+-- | 'Break', applied to a predicate @p@ and a type-level list @xs@, returns a 
+-- type-level tuple where
+-- first element is longest prefix (possibly empty) of @xs@ of elements that
+-- /do not satisfy/ @p@ and second element is the remainder of the list:
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat])
+-- Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat]) :: ([Nat],
+--                                                                    [Nat])
+-- = '( '[1, 2, 3], '[4, 1, 2, 3, 4])
+--
+-- >>> :kind! Eval (Break (Flip (<) 9) '[1,2,3])
+-- Eval (Break (Flip (<) 9) '[1,2,3]) :: ([Nat], [Nat])
+-- = '( '[], '[1, 2, 3])
+--
+-- >>> :kind! Eval (Break (Flip (>) 9) '[1,2,3])
+-- Eval (Break (Flip (>) 9) '[1,2,3]) :: ([Nat], [Nat])
+-- = '( '[1, 2, 3], '[])
+data Break :: (a -> Exp Bool) -> [a] -> Exp ([a],[a])
+type instance Eval (Break p lst) = Eval (Span (BreakHelp p) lst)
+
+-- helper for Break
+data BreakHelp :: (a -> Exp Bool) -> a -> Exp Bool
+type instance Eval (BreakHelp p a) = Eval (Not =<< p a)
+
+
+-- | IsPrefixOf takes two type-level lists and returns true
+-- iff the first list is a prefix of the second.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsPrefixOf '[0,1,2] '[0,1,2,3,4,5])
+-- Eval (IsPrefixOf '[0,1,2] '[0,1,2,3,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsPrefixOf '[0,1,2] '[0,1,3,2,4,5])
+-- Eval (IsPrefixOf '[0,1,2] '[0,1,3,2,4,5]) :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsPrefixOf '[] '[0,1,3,2,4,5])
+-- Eval (IsPrefixOf '[] '[0,1,3,2,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsPrefixOf '[0,1,3,2,4,5] '[])
+-- Eval (IsPrefixOf '[0,1,3,2,4,5] '[]) :: Bool
+-- = 'False
+data IsPrefixOf :: [a] -> [a] -> Exp Bool
+type instance Eval (IsPrefixOf xs ys) = IsPrefixOf_ xs ys
+
+-- helper for IsPrefixOf
+type family IsPrefixOf_ (xs :: [a]) (ys :: [a]) :: Bool where
+    IsPrefixOf_ '[] _ = 'True
+    IsPrefixOf_ _ '[] = 'False
+    IsPrefixOf_ (x ': xs) (y ': ys) =
+         Eval ((Eval (TyEq x y)) && IsPrefixOf_ xs ys)
+
+
+-- | IsSuffixOf take two type-level lists and returns true
+-- iff the first list is a suffix of the second.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsSuffixOf '[3,4,5] '[0,1,2,3,4,5])
+-- Eval (IsSuffixOf '[3,4,5] '[0,1,2,3,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsSuffixOf '[3,4,5] '[0,1,3,2,4,5])
+-- Eval (IsSuffixOf '[3,4,5] '[0,1,3,2,4,5]) :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsSuffixOf '[] '[0,1,3,2,4,5])
+-- Eval (IsSuffixOf '[] '[0,1,3,2,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsSuffixOf '[0,1,3,2,4,5] '[])
+-- Eval (IsSuffixOf '[0,1,3,2,4,5] '[]) :: Bool
+-- = 'False
+data IsSuffixOf :: [a] -> [a] -> Exp Bool
+type instance Eval (IsSuffixOf xs ys) =
+    Eval (IsPrefixOf (Reverse @@ xs) (Reverse @@ ys))
+
+
+-- | IsInfixOf take two type-level lists and returns true
+-- iff the first list is a infix of the second.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsInfixOf '[2,3,4]  '[0,1,2,3,4,5,6])
+-- Eval (IsInfixOf '[2,3,4]  '[0,1,2,3,4,5,6]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsInfixOf '[2,4,4]  '[0,1,2,3,4,5,6])
+-- Eval (IsInfixOf '[2,4,4]  '[0,1,2,3,4,5,6]) :: Bool
+-- = 'False
+data IsInfixOf :: [a] -> [a] -> Exp Bool
+type instance Eval (IsInfixOf xs ys) = Eval (Any (IsPrefixOf xs) =<< Tails ys)
+
+
+-- | Tails
+-- 
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Tails '[0,1,2,3])
+-- Eval (Tails '[0,1,2,3]) :: [[Nat]]
+-- = '[ '[0, 1, 2, 3], '[1, 2, 3], '[2, 3], '[3]]
+data Tails :: [a] -> Exp [[a]]
+type instance Eval (Tails '[]) = '[]
+type instance Eval (Tails (a ': as)) = (a ': as) ': Eval (Tails as)
+
 --------------------------------------------------------------------------------
 
 
@@ -132,30 +292,67 @@ type instance Eval (PartHelp p a '(xs,ys)) =
 --
 -- === __Example__
 -- 
--- >>> :kind! Eval (All '[ 'True, 'True])
--- Eval (All '[ 'True, 'True]) :: Bool
+-- >>> :kind! Eval (And '[ 'True, 'True])
+-- Eval (And '[ 'True, 'True]) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (All '[ 'True, 'True, 'False])
--- Eval (All '[ 'True, 'True, 'False]) :: Bool
+-- >>> :kind! Eval (And '[ 'True, 'True, 'False])
+-- Eval (And '[ 'True, 'True, 'False]) :: Bool
 -- = 'False
-data All :: [Bool] -> Exp Bool
-type instance Eval (All lst) = Eval (Foldr (&&) 'True lst)
+data And :: [Bool] -> Exp Bool
+type instance Eval (And lst) = Eval (Foldr (&&) 'True lst)
+
+
+-- | Type-level All.
+--
+-- === __Example__
+--
+-- >>> :kind! Eval (All (Flip (<) 6) '[0,1,2,3,4,5])
+-- Eval (All (Flip (<) 6) '[0,1,2,3,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (All (Flip (<) 5) '[0,1,2,3,4,5])
+-- Eval (All (Flip (<) 5) '[0,1,2,3,4,5]) :: Bool
+-- = 'False
+data All :: (a -> Exp Bool) -> [a] -> Exp Bool
+type instance Eval (All p lst) = Eval (And =<< Map p lst)
 
 
 -- | Give true if any of the booleans in the list is true.
 --
 -- === __Example__
 -- 
--- >>> :kind! Eval (Any '[ 'True, 'True])
--- Eval (Any '[ 'True, 'True]) :: Bool
+-- >>> :kind! Eval (Or '[ 'True, 'True])
+-- Eval (Or '[ 'True, 'True]) :: Bool
 -- = 'True
 -- 
--- >>> :kind! Eval (Any '[ 'False, 'False])
--- Eval (Any '[ 'False, 'False]) :: Bool
+-- >>> :kind! Eval (Or '[ 'False, 'False])
+-- Eval (Or '[ 'False, 'False]) :: Bool
 -- = 'False
-data Any :: [Bool] -> Exp Bool
-type instance Eval (Any lst) = Eval (Foldr (||) 'False lst)
+data Or :: [Bool] -> Exp Bool
+type instance Eval (Or lst) = Eval (Foldr (||) 'False lst)
+
+
+-- | Type-level Any.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Any (Flip (<) 5) '[0,1,2,3,4,5])
+-- Eval (Any (Flip (<) 5) '[0,1,2,3,4,5]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (Any (Flip (<) 0) '[0,1,2,3,4,5])
+-- Eval (Any (Flip (<) 0) '[0,1,2,3,4,5]) :: Bool
+-- = 'False
+data Any :: (a -> Exp Bool) -> [a] -> Exp Bool
+type instance Eval (Any p lst) = Eval (Or =<< Map p lst)
 
 --------------------------------------------------------------------------------
+
+data Snoc :: [a] -> a -> Exp [a]
+type instance Eval (Snoc lst a) = Eval (lst ++ '[a])
+
+
+data ToList :: a -> Exp [a]
+type instance Eval (ToList a) = '[a]
 

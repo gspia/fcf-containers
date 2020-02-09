@@ -17,7 +17,7 @@ Maintainer  : gspia
 = Fcf.Data.Set
 
 Set provides an interface which is similar to the that given by the
-container-package. If a method is missing here that you need, please do open
+containers-package. If a method is missing here that you need, please do open
 up an issue or better, make a PR.
 
 Many of the examples are from containers-package. The internal representation
@@ -36,6 +36,8 @@ module Fcf.Data.Set
     , NotMember
     , Null
     , Size
+    , IsSubsetOf
+    , IsProperSubsetOf
       
     -- * Construction
     , Empty
@@ -55,16 +57,20 @@ module Fcf.Data.Set
     )
   where
 
+--------------------------------------------------------------------------------
+
 import qualified GHC.TypeLits as TL
 
-import           Fcf ( Eval, Exp, type (=<<), type (<=<)
-                     , Not, If, Map, TyEq )
+import           Fcf ( Eval, Exp, type (=<<), type (<=<), type (&&)
+                     , Not, If, Map, Flip, TyEq )
 import qualified Fcf as Fcf (Foldr, Filter)
 import           Fcf.Data.List ( Elem, Cons, Concat, Reverse, Length, type (++)
                                , ZipWith, Replicate)
+import           Fcf.Alg.List ( All, Any )
 
+--------------------------------------------------------------------------------
 
-import           Fcf.Alg.List
+import           Fcf.Alg.List ( ListF(..), ListToFix)
 import           Fcf.Alg.Morphism
 
 --------------------------------------------------------------------------------
@@ -83,6 +89,7 @@ import           Fcf.Alg.Morphism
 data Set a = Set [a]
 
 
+--------------------------------------------------------------------------------
 
 -- | Empty
 -- 
@@ -191,6 +198,48 @@ type instance Eval (Null ('Set (_ ': _))) = 'False
 -- = 2
 data Size :: Set v -> Exp TL.Nat
 type instance Eval (Size ('Set lst)) = Eval (Length lst)
+
+
+-- | IsSubsetOf 
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4]))
+-- Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsSubsetOf ('Set '[0,1]) ('Set '[0,1,2,3,4]))
+-- Eval (IsSubsetOf ('Set '[0,1]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsSubsetOf ('Set '[0,2,1,3,4]) ('Set '[0,1,2,3,4]))
+-- Eval (IsSubsetOf ('Set '[0,2,1,3,4]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (IsSubsetOf ('Set '[0,1,2,3,4,5]) ('Set '[0,1,2,3,4]))
+-- Eval (IsSubsetOf ('Set '[0,1,2,3,4,5]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'False
+data IsSubsetOf :: Set a -> Set a -> Exp Bool
+type instance Eval (IsSubsetOf ('Set s1) ('Set s2)) =
+    Eval (All (Flip Elem s2) s1)
+
+
+-- | IsProperSubsetOf 
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4]))
+-- Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'False
+--
+-- >>> :kind! Eval (IsProperSubsetOf ('Set '[0,2,1,3]) ('Set '[0,1,2,3,4]))
+-- Eval (IsProperSubsetOf ('Set '[0,2,1,3]) ('Set '[0,1,2,3,4])) :: Bool
+-- = 'True
+data IsProperSubsetOf :: Set a -> Set a -> Exp Bool
+type instance Eval (IsProperSubsetOf ('Set s1) ('Set s2)) = Eval
+    (Eval (All (Flip Elem s2) s1) &&
+    Eval (Any (Not <=< Flip Elem s1) s2))
+
 
 
 -- | Type-level set union.
