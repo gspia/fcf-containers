@@ -182,9 +182,8 @@ type instance Eval (Span p lst) = '( Eval (TakeWhile p lst), Eval (DropWhile p l
 --
 -- === __Example__
 -- 
--- >>> :kind! Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat])
--- Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat]) :: ([Nat],
---                                                                    [Nat])
+-- >>> :kind! Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4])
+-- Eval (Break (Flip (>) 3) '[1,2,3,4,1,2,3,4]) :: ([Nat], [Nat])
 -- = '( '[1, 2, 3], '[4, 1, 2, 3, 4])
 --
 -- >>> :kind! Eval (Break (Flip (<) 9) '[1,2,3])
