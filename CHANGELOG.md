@@ -1,8 +1,14 @@
 
 # 0.3.0
 
+20200209
+
  - a separate Sort module
  - add possibility to sort a list of lists
+ - a Text module
+ - several list functions (And, Or, All, Any, ..)
+ - IsProperSubsetOf, IsSubsetOf in Set
+ - add new example that uses MapC and Text
 
 # 0.2.0
 

@@ -31,8 +31,9 @@ import qualified GHC.TypeLits as TL
 
 import           Fcf.Core (Eval, Exp, type (@@))
 import           Fcf.Classes (Map)
-import           Fcf.Combinators (type (=<<))
-import           Fcf.Data.List (Foldr, Concat, TakeWhile, DropWhile, Reverse, type (++))
+import           Fcf.Combinators (type (=<<), type (<=<))
+import           Fcf.Data.List (Foldr, Concat, TakeWhile, DropWhile, Reverse
+                               , type (++), ZipWith)
 import           Fcf.Utils (If, TyEq)
 import           Fcf.Data.Bool (type (&&), type  (||), Not)
 import           Fcf.Data.Nat
@@ -194,11 +195,7 @@ type instance Eval (Span p lst) = '( Eval (TakeWhile p lst), Eval (DropWhile p l
 -- Eval (Break (Flip (>) 9) '[1,2,3]) :: ([Nat], [Nat])
 -- = '( '[1, 2, 3], '[])
 data Break :: (a -> Exp Bool) -> [a] -> Exp ([a],[a])
-type instance Eval (Break p lst) = Eval (Span (BreakHelp p) lst)
-
--- helper for Break
-data BreakHelp :: (a -> Exp Bool) -> a -> Exp Bool
-type instance Eval (BreakHelp p a) = Eval (Not =<< p a)
+type instance Eval (Break p lst) = Eval (Span (Not <=< p) lst)
 
 
 -- | IsPrefixOf takes two type-level lists and returns true
@@ -348,10 +345,39 @@ type instance Eval (Any p lst) = Eval (Or =<< Map p lst)
 
 --------------------------------------------------------------------------------
 
+-- | Snoc for type-level lists.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Snoc '[1,2,3] 4)
+-- Eval (Snoc '[1,2,3] 4) :: [Nat]
+-- = '[1, 2, 3, 4]
 data Snoc :: [a] -> a -> Exp [a]
 type instance Eval (Snoc lst a) = Eval (lst ++ '[a])
 
-
+-- | ToList for type-level lists.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (ToList 1)
+-- Eval (ToList 1) :: [Nat]
+-- = '[1]
 data ToList :: a -> Exp [a]
 type instance Eval (ToList a) = '[a]
+
+
+-- | Equal tests for list equality. We may change the name to (==).
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (Equal '[1,2,3] '[1,2,3])
+-- Eval (Equal '[1,2,3] '[1,2,3]) :: Bool
+-- = 'True
+--
+-- >>> :kind! Eval (Equal '[1,2,3] '[1,3,2])
+-- Eval (Equal '[1,2,3] '[1,3,2]) :: Bool
+-- = 'False
+data Equal :: [a] -> [a] -> Exp Bool
+type instance Eval (Equal as bs) = Eval (And =<< ZipWith TyEq as bs)
+
 

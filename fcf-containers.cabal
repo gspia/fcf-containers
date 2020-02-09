@@ -51,6 +51,20 @@ Executable orbits
      --  -ddump-simpl
      --  -O2
 
+Executable haiku
+  hs-source-dirs:   examples,src
+  main-is:          Haiku.hs
+  default-language: Haskell2010
+  other-modules:    Fcf.Alg.Morphism
+                  , Fcf.Alg.List
+                  , Fcf.Data.Tree
+                  , Fcf.Data.MapC
+                  , Fcf.Data.Set
+                  , Fcf.Data.Symbol
+                  , Fcf.Data.Text
+  build-depends:    base
+                  , first-class-families
+
 test-suite fcf-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test

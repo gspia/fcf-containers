@@ -118,3 +118,4 @@ showResult = show $ TL.natVal @n Proxy
 
 main :: IO ()
 main = putStrLn $ "Number of orbits is " ++ showResult
+

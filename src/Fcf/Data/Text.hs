@@ -24,7 +24,7 @@ type level lists.
 --------------------------------------------------------------------------------
 
 module Fcf.Data.Text
-    ( Text
+    ( Text (..)
 
     -- * Creation
     , Empty
