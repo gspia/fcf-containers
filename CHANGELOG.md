@@ -1,4 +1,14 @@
 
+# 0.4.0
+
+20200216
+
+ - add Para
+ - add Histo
+ - add NatF
+ - and examples 
+ - correct the Text Length example
+
 # 0.3.0
 
 20200209

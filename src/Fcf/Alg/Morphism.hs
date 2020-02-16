@@ -52,13 +52,17 @@ type Algebra f a = f a -> Exp a
 -- | Commonly used name describing the method 'Ana' eats.
 type CoAlgebra f a = a -> Exp (f a)
 
+-- | Commonly used name describing the method 'Para' eats.
+type RAlgebra f a = f (Fix f, a) -> Exp a
+
 --------------------------------------------------------------------------------
 
 
 -- | Write the function to give a 'Fix', and feed it in together with an
 -- 'Algebra'.
 -- 
--- Check Fcf.Alg.List to see example algebras in use.
+-- Check Fcf.Alg.List to see example algebras in use. There we have e.g.
+-- ListToFix-function.
 data Cata :: Algebra f a -> Fix f -> Exp a
 type instance Eval (Cata alg ('Fix b)) = alg @@ (Eval (Map (Cata alg) b))
 
@@ -100,6 +104,80 @@ type instance Eval (Ana coalg a) = 'Fix (Eval (Map (Ana coalg) (Eval (coalg a)))
 -- = 15
 data Hylo :: Algebra f a -> CoAlgebra f b -> b -> Exp a
 type instance Eval (Hylo alg coalg a) = Eval (Cata alg =<< Ana coalg a)
+
+
+-- Helper for Para so that we can do fmap
+data Fanout :: RAlgebra f a -> Fix f -> Exp ( Fix f, a)
+type instance Eval (Fanout ralg ('Fix f)) = '( 'Fix f, Eval (Para ralg ('Fix f)))
+
+
+-- | Write a function to give a 'Fix', and feed it in together with an
+-- 'RAlgebra'
+--
+-- Check Fcf.Alg.List to see example algebras in use. There we have e.g.
+-- ListToParaFix-function.
+data Para :: RAlgebra f a -> Fix f -> Exp a
+type instance Eval (Para ralg ('Fix  a)) =  ralg @@ (Eval (Map (Fanout ralg) a))
+
+--------------------------------------------------------------------------------
+
+-- | Annotate (f r) with attribute a
+-- (from Recursion Schemes by example, Tim Williams).
+newtype AnnF f a r = AnnF (f r, a)
+
+-- | Annotated fixed-point type. A cofree comonad
+-- (from Recursion Schemes by example, Tim Williams).
+type Ann f a = Fix (AnnF f a)
+
+-- | Attribute of the root node
+-- (from Recursion Schemes by example, Tim Williams).
+data Attr :: Ann f a -> Exp a
+type instance Eval (Attr ('Fix ( 'AnnF '(_, a)))) = a
+
+-- | Strip attribute from root
+-- (from Recursion Schemes by example, Tim Williams).
+data Strip :: Ann f a -> Exp (f (Ann f a))
+type instance Eval (Strip ('Fix ( 'AnnF '(x,_)))) = x
+
+-- | Annotation constructor
+-- (from Recursion Schemes by example, Tim Williams).
+data AnnConstr :: (f (Ann f a), a) -> Exp (Fix (AnnF f a))
+type instance Eval (AnnConstr fxp) = Eval (Pure ('Fix ('AnnF fxp)))
+
+-- | Synthesized attributes are created in a bottom-up traversal
+-- using a catamorphism
+-- (from Recursion Schemes by example, Tim Williams).
+-- 
+-- This is the algebra that is fed to the cata.
+data SynthAlg :: (f a -> Exp a) -> f (Ann f a) -> Exp (Ann f a)
+type instance Eval (SynthAlg alg faf) =
+    Eval (AnnConstr '(faf, Eval (alg  =<< Map Attr faf)))
+
+-- | Synthesized attributes are created in a bottom-up traversal
+-- using a catamorphism
+-- (from Recursion Schemes by example, Tim Williams).
+-- 
+-- For the example, see "Fcf.Data.Alg.Tree.Sizes".
+data Synthesize :: (f a -> Exp a) -> Fix f -> Exp (Ann f a)
+type instance Eval (Synthesize f fx) = Eval (Cata (SynthAlg f) fx)
+
+--------------------------------------------------------------------------------
+
+-- | Histo takes annotation algebra and takes a Fix-structure
+-- (from Recursion Schemes by example, Tim Williams).
+-- 
+-- This is a helper for 'Histo' as it is implemented with 'Cata'.
+data HistoAlg :: (f (Ann f a) -> Exp a) -> f (Ann f a) -> Exp (Ann f a)
+type instance Eval (HistoAlg alg faf) =
+    Eval (AnnConstr '(faf, Eval (alg faf)))
+
+-- | Histo takes annotation algebra and takes a Fix-structure
+-- (from Recursion Schemes by example, Tim Williams).
+-- 
+-- Examples can be found from "Fcf.Data.Alg.Tree" and "Fcf.Data.Alg.List"
+-- modules.
+data Histo :: (f (Ann f a) -> Exp a) -> Fix f -> Exp a
+type instance Eval (Histo alg fx) = Eval (Attr =<< Cata (HistoAlg alg) fx)
 
 --------------------------------------------------------------------------------
 

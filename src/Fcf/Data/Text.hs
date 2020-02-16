@@ -210,7 +210,7 @@ type instance Eval (Length ('Text lst)) = Eval (F.Length lst)
 --
 -- === __Example__
 -- 
--- > :kind! Eval (Cons "h" ('Text '["a", "a", "m", "u"]))
+-- >>> :kind! Eval (Cons "h" ('Text '["a", "a", "m", "u"]))
 -- Eval (Cons "h" ('Text '["a", "a", "m", "u"])) :: Text
 -- = 'Text '["h", "a", "a", "m", "u"]
 data Cons :: Symbol -> Text -> Exp Text

@@ -116,11 +116,11 @@ type instance Eval (BuildFibTreeCoA n) =
 -- 
 -- __Example__
 --
--- >>> :kind! Eval (Fib 10)
--- Eval (Fib 10) :: Nat
+-- >>> :kind! Eval (FibHylo 10)
+-- Eval (FibHylo 10) :: Nat
 -- = 55
-data Fib :: Nat -> Exp Nat
-type instance Eval (Fib n) = Eval (Hylo SumNodesAlg BuildFibTreeCoA n)
+data FibHylo :: Nat -> Exp Nat
+type instance Eval (FibHylo n) = Eval (Hylo SumNodesAlg BuildFibTreeCoA n)
 
 
 --------------------------------------------------------------------------------
@@ -129,7 +129,89 @@ type instance Eval (Fib n) = Eval (Hylo SumNodesAlg BuildFibTreeCoA n)
 -- algorithms.
 data BTreeF a b = BEmptyF | BNodeF a b b
 
--- functor
+-- | BTreeF is a functor
 type instance Eval (Map f 'BEmptyF) = 'BEmptyF
 type instance Eval (Map f ('BNodeF a b1 b2)) = 'BNodeF a (Eval (f b1)) (Eval (f b2))
+
+--------------------------------------------------------------------------------
+
+-- | A kind of foldable sum class. Pun may or may not be intended.
+data FSum :: f a -> Exp a
+
+-- | Instances to make TreeF to be a foldable sum. After this one, we can write
+-- the 'Sizes' example.
+type instance Eval (FSum ('NodeF a '[])) = 0
+type instance Eval (FSum ('NodeF a (b ': bs))) = Eval (Sum (b ': bs))
+
+-- | Sizes example from Recursion Schemes by example, Tim Williams. This annotes
+-- each node with the size of its subtree.
+--
+-- __Example__
+--
+-- >>> :kind! Eval (Sizes =<< Ana BuildNodeCoA 1)
+-- Eval (Sizes =<< Ana BuildNodeCoA 1) :: Fix (AnnF (TreeF Nat) Nat)
+-- = 'Fix
+--     ('AnnF
+--        '( 'NodeF
+--             1
+--             '[ 'Fix
+--                  ('AnnF
+--                     '( 'NodeF
+--                          2
+--                          '[ 'Fix ('AnnF '( 'NodeF 4 '[], 1)),
+--                             'Fix ('AnnF '( 'NodeF 5 '[], 1))],
+--                        3)),
+--                'Fix
+--                  ('AnnF
+--                     '( 'NodeF
+--                          3
+--                          '[ 'Fix ('AnnF '( 'NodeF 6 '[], 1)),
+--                             'Fix ('AnnF '( 'NodeF 7 '[], 1))],
+--                        3))],
+--           7))
+type instance Eval (Sizes fx) = Eval (Synthesize ( ( (+) 1) <=< FSum) fx)
+data Sizes :: Fix f -> Exp (Ann f Nat)
+
+--------------------------------------------------------------------------------
+
+
+-- | A NatF functor that can be used with different morphisms. This tree-module
+-- is probably a wrong place to this one. Now it is here for the Fibonacci
+-- example.
+data NatF r = Succ r | Zero
+
+-- | NatF has to have functor-instances so that morphisms will work.
+type instance Eval (Map f 'Zero) = 'Zero
+type instance Eval (Map f ('Succ r)) = 'Succ (Eval (f r))
+
+-- | We want to be able to build NatF Fix-structures out of Nat's.
+data NatToFix :: Nat -> Exp (Fix NatF)
+type instance Eval (NatToFix n) = Eval
+    (If (Eval (n < 1))
+        (Pure ('Fix 'Zero))
+        (RecNTF =<< n - 1)
+    )
+
+-- helper for 'NatToFix' -function
+data RecNTF :: Nat -> Exp (Fix NatF)
+type instance Eval (RecNTF n) = 'Fix ('Succ (Eval (NatToFix n)))
+
+-- | Efficient Fibonacci algebra from Recursion Schemes by example, Tim Williams.
+data FibAlgebra :: NatF (Ann NatF Nat) -> Exp Nat
+type instance Eval (FibAlgebra 'Zero) = 0
+type instance Eval (FibAlgebra ('Succ ('Fix ('AnnF '( 'Zero, _) )))) = 1
+type instance Eval (FibAlgebra ('Succ ('Fix ('AnnF '( 'Succ ('Fix ('AnnF '( _, n))) , m) )))) = Eval (n + m)
+
+-- | Efficient Fibonacci type-level function
+-- (from Recursion Schemes by example, Tim Williams). Compare this to 
+-- 'FibHylo'.
+--
+-- __Example__
+--
+-- >>> :kind! Eval (FibHisto 100)
+-- Eval (FibHisto 100) :: Nat
+-- = 354224848179261915075
+data FibHisto :: Nat -> Exp Nat
+type instance Eval (FibHisto n) = Eval (Histo FibAlgebra =<< NatToFix n)
+
 
