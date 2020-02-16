@@ -17,8 +17,6 @@ Add the missing methods and doctests.
 
 ## Morphisms:
  
-- Para with examples
-- Histo with examples
 - Apo with examples
 - Futu with examples
 - and other 

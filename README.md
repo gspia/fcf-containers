@@ -25,7 +25,9 @@ include
  
 Why fcf-like? The kind of signatures used for functions might be easier to 
 read for some people and the ability to apply partially a function is nice 
-tool to have.
+tool to have. The techniques that allows this are defunctionalization, 
+encoding the functions with empty data types and the use of open type family 
+to Eval the constructed expressions. 
  
 If you have other motivations, please do let us know! 
 
@@ -70,7 +72,98 @@ what PRAGMAs are probably needed etc.
 cabal run orbits 
 ```
 
-The `ghci` and `:kind!` command in there are your friends!
+There is also another example that show how to use MapC, see
+[Haiku.hs](https://github.com/gspia/fcf-containers/blob/master/examples/Haiku.hs)
+
+```
+cabal run haiku 
+```
+
+
+## Random Notes
+
+### Partiality and anonymous functions
+
+In the end, everything has to be total. We just post-pone the totality checking
+with defunctionalization in a way by trying to evaluate our functions as late
+as possible with the `Eval` function. 
+
+We don't have lambdas, but if you can write the helper function in point-free
+form, it might can be used directly without any global function definition.
+Remember, that `(<=<)` corresponds to term-level `(.)` and `(=<<)` to 
+term-level function  application `($)`. See also Maguire's book 
+(Thinking with Types).
+
+
+### Conflicting family instance declarations
+
+Transforming term-level Haskell code is relatively straigthforward. Often, 
+local definitions in `where` and anonymous functions will be turned into 
+separate helper functions. 
+
+Occasionally, the pattern matching is not quite enough. Please, consider
+
+```
+isPrefixOf              :: (Eq a) => [a] -> [a] -> Bool
+isPrefixOf [] _         =  True
+isPrefixOf _  []        =  False
+isPrefixOf (x:xs) (y:ys)=  x == y && isPrefixOf xs ys
+```
+
+We could try to define it as 
+```
+data IsPrefixOf :: [a] -> [a] -> Exp Bool
+type instance Eval (IsPrefixOf '[] _) = 'True
+type instance Eval (IsPrefixOf _ '[]) = 'False
+type instance Eval (IsPrefixOf (x ': xs) (y ': ys)) =
+         Eval ((Eval (TyEq x y)) && Eval (IsPrefixOf xs ys))
+```
+
+But ghc does not like this definition: the first two type instances are
+conflicting together. Instead, in these situations we can use a helper type 
+family:
+
+```
+data IsPrefixOf :: [a] -> [a] -> Exp Bool
+type instance Eval (IsPrefixOf xs ys) = IsPrefixOf_ xs ys
+
+-- helper for IsPrefixOf
+type family IsPrefixOf_ (xs :: [a]) (ys :: [a]) :: Bool where
+    IsPrefixOf_ '[] _ = 'True
+    IsPrefixOf_ _ '[] = 'False
+    IsPrefixOf_ (x ': xs) (y ': ys) =
+         Eval ((Eval (TyEq x y)) && IsPrefixOf_ xs ys)
+```
+
+### Using `If`
+
+If possible, try to avoid using `Eval` in the if-branches. 
+For example, consider
+```
+    (If (Eval (s > 0) )
+        ( 'Just '( a, s TL.- 1 ))
+        'Nothing
+    )
+```
+and
+```
+    (If (Eval (s > 0))
+        (Eval (Pure ( 'Just '( a, s TL.- 1 ))))
+        (Eval (Pure 'Nothing))
+    )
+```
+
+Both compile and it is easy to end up in the latter form, especially if the 
+branch is more complex than in this example. 
+
+The former, however, is much better as it doesn't have to evaluate both branches
+and is thus more efficient.
+
+
+### Other
+
+
+The `ghci` and `:kind!` command are your friends!
 
 Source also contains a lot of examples, see
 [fcf-containers](https://github.com/gspia/fcf-containers/tree/master/src/Fcf).
