@@ -21,6 +21,7 @@ Tested-With:         GHC ==8.8.1 || ==8.6.5 || ==8.4.4 || ==8.2.2
 library
   hs-source-dirs:    src
   exposed-modules:   Fcf.Data.MapC
+                   , Fcf.Data.NatMap
                    , Fcf.Data.Tree
                    , Fcf.Data.Set
                    , Fcf.Data.Symbol

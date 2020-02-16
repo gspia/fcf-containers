@@ -8,6 +8,7 @@
  - add NatF
  - and examples 
  - correct the Text Length example
+ - NatMap (mimick IntMap)
 
 # 0.3.0
 
