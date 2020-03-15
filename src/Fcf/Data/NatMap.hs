@@ -14,11 +14,11 @@ Copyright   : (c) gspia 2020-
 License     : BSD
 Maintainer  : gspia
 
-= Fcf.Data.NatNatMap
+= Fcf.Data.NatMap
 
 NatMap provides an interface to mapping keys (Nat's) to values, which is
 similar to
-NatIntMap given by the containers-package. Note that the this module still misses
+IntMap given by the containers-package. Note that the this module still misses
 some of the methods that can be found in containers. If you need some, please
 do open up an issue or better, make a PR.
 
