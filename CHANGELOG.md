@@ -1,4 +1,11 @@
 
+# 0.5.0
+
+20200323
+
+ - start using version 0.8.0 of first-class-families
+ - a documentation fix
+
 # 0.4.0
 
 20200216

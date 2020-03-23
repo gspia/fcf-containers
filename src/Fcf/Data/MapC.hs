@@ -82,10 +82,10 @@ import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
                      , Pure, TyEq, Length, Uncurry)
 import qualified Fcf as Fcf (Map, Foldr, Filter)
-import           Fcf.Data.List (Elem)
+import qualified Fcf.Data.List as L (Elem, Partition)
 
 import           Fcf.Alg.Morphism
-import qualified Fcf.Alg.List as Fcf (Partition)
+-- import qualified Fcf.Alg.List as Fcf (Partition)
 
 --------------------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ import qualified Fcf.Alg.List as Fcf (Partition)
 -- $setup
 -- >>> import           Fcf (type (>=))
 -- >>> import           Fcf.Data.Nat
--- >>> import           Fcf.Data.Symbol (Symbol,Append)
+-- >>> import           Fcf.Alg.Symbol (Symbol,Append)
 
 --------------------------------------------------------------------------------
 
@@ -154,7 +154,7 @@ type instance Eval (FromList lst) = 'MapC lst
 -- = 'MapC '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
 data Insert :: k -> v -> MapC k v -> Exp (MapC k v)
 type instance Eval (Insert k v ('MapC lst)) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         ('MapC lst)
         ('MapC ( '(k,v) ': lst))
 
@@ -179,7 +179,7 @@ type instance Eval (Insert k v ('MapC lst)) =
 -- = 'MapC '[ '(7, "xxx")]
 data InsertWith :: (v -> v -> Exp v) -> k -> v -> MapC k v -> Exp (MapC k v)
 type instance Eval (InsertWith f k v ('MapC lst)) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         ('MapC (Eval (Fcf.Map (InsWithHelp f k v) lst)))
         ('MapC (Eval (lst ++ '[ '(k,v)])))
 
@@ -272,7 +272,7 @@ type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
 -- = 'False
 data Member :: k -> MapC k v -> Exp Bool
 type instance Eval (Member k mp) =
-    Eval (Elem k =<< Keys mp)
+    Eval (L.Elem k =<< Keys mp)
 
 -- | NotMember
 --
@@ -286,7 +286,7 @@ type instance Eval (Member k mp) =
 -- = 'True
 data NotMember :: k -> MapC k v -> Exp Bool
 type instance Eval (NotMember k mp) =
-    Eval (Not =<< Elem k =<< Keys mp)
+    Eval (Not =<< L.Elem k =<< Keys mp)
 
 -- | Null
 --
@@ -327,7 +327,7 @@ type instance Eval (Union ('MapC lst1) ('MapC lst2)) =
 
 data UComb :: (k,v) -> [(k,v)] -> Exp [(k,v)]
 type instance Eval (UComb '(k,v) lst) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         lst
         ('(k,v) ': lst)
 
@@ -348,7 +348,7 @@ type instance Eval (Difference mp1 mp2) =
 -- helper
 data DiffNotMem :: MapC k v -> k -> v -> Exp Bool
 type instance Eval (DiffNotMem mp k _) =
-    Eval (Not =<< Elem k =<< Keys mp)
+    Eval (Not =<< L.Elem k =<< Keys mp)
 
 
 -- | Intersection
@@ -366,7 +366,7 @@ type instance Eval (Intersection mp1 mp2) =
 
 -- helper
 data InterMem :: MapC k v -> k -> v -> Exp Bool
-type instance Eval (InterMem mp k _) = Eval (Elem k =<< Keys mp)
+type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
 
 
 -- | Disjoint
@@ -519,7 +519,7 @@ type instance Eval (FilterWithKey f ('MapC lst)) =
 -- = '( 'MapC '[ '(3, 30)], 'MapC '[ '(5, 50)])
 data Partition :: (v -> Exp Bool) -> MapC k v -> Exp (MapC k v, MapC k v)
 type instance Eval (Partition f ('MapC lst)) =
-    Eval (PartitionHlp (Eval (Fcf.Partition (f <=< Snd) lst)))
+    Eval (PartitionHlp (Eval (L.Partition (f <=< Snd) lst)))
 
 data PartitionHlp :: ([(k,v)],[(k,v)]) -> Exp (MapC k v, MapC k v)
 type instance Eval (PartitionHlp '(xs,ys)) = '( 'MapC xs, 'MapC ys)

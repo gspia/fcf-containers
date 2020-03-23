@@ -8,13 +8,13 @@
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
 
 {-|
-Module      : Fcf.Data.Symbol
+Module      : Fcf.Alg.Symbol
 Description : Type level symbols
 Copyright   : (c) gspia 2020-
 License     : BSD
 Maintainer  : gspia
 
-= Fcf.Data.Symbol
+= Fcf.Alg.Symbol
 
 Type-level symbols and functions for them.
 
@@ -27,11 +27,11 @@ TODO: Would this whole module have a place first-class-families?
 
 --------------------------------------------------------------------------------
 
-module Fcf.Data.Symbol
+module Fcf.Alg.Symbol
     ( -- * Reexported type
-      -- | From "GHC.TypeList".
+      -- | From "Fcf.Data.Symbol" (which is from GHC).
 
-      Symbol
+      module X
 
       -- * Functions
 
@@ -62,6 +62,7 @@ import qualified GHC.TypeLits as TL
 import           Fcf.Core (Eval, Exp)
 import           Fcf.Data.List (Foldr, Elem)
 import           Fcf.Data.Bool (type (||))
+import           Fcf.Data.Symbol as X
 import           Fcf.Utils (TyEq)
 
 import           Fcf.Combinators (type (=<<))

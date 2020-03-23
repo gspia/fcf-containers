@@ -64,9 +64,9 @@ import qualified GHC.TypeLits as TL
 import           Fcf ( Eval, Exp, type (=<<), type (<=<), type (&&)
                      , Not, If, Map, Flip, TyEq )
 import qualified Fcf as Fcf (Foldr, Filter)
+import           Fcf.Class.Foldable (All, Any)
 import           Fcf.Data.List ( Elem, Cons, Concat, Reverse, Length, type (++)
                                , ZipWith, Replicate)
-import           Fcf.Alg.List ( All, Any )
 
 --------------------------------------------------------------------------------
 

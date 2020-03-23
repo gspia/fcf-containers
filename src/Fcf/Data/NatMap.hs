@@ -71,17 +71,14 @@ module Fcf.Data.NatMap
     )
   where
 
--- import qualified GHC.TypeLits as TL
-
 import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
                      , Pure, TyEq, Length, Uncurry)
 import qualified Fcf as Fcf (Map, Foldr, Filter)
-import           Fcf.Data.List (Elem)
+import qualified Fcf.Data.List as L (Elem, Partition)
 
 import           Fcf.Data.Nat
 import           Fcf.Alg.Morphism
-import qualified Fcf.Alg.List as Fcf (Partition)
 
 --------------------------------------------------------------------------------
 
@@ -90,7 +87,7 @@ import qualified Fcf.Alg.List as Fcf (Partition)
 -- $setup
 -- >>> import           Fcf (type (>=))
 -- >>> import           Fcf.Data.Nat
--- >>> import           Fcf.Data.Symbol (Symbol,Append)
+-- >>> import           Fcf.Alg.Symbol (Symbol,Append)
 
 --------------------------------------------------------------------------------
 
@@ -149,13 +146,15 @@ type instance Eval (FromList lst) = 'NatMap lst
 -- = 'NatMap '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
 data Insert :: Nat -> v -> NatMap v -> Exp (NatMap v)
 type instance Eval (Insert k v ('NatMap lst)) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         ('NatMap lst)
         ('NatMap ( '(k,v) ': lst))
 
 
 -- | InsertWith
+--
 -- if old there, map
+--
 -- if no old, add
 --
 -- === __Example__
@@ -175,7 +174,7 @@ type instance Eval (Insert k v ('NatMap lst)) =
 -- = 'NatMap '[ '(7, "xxx")]
 data InsertWith :: (v -> v -> Exp v) -> Nat -> v -> NatMap v -> Exp (NatMap v)
 type instance Eval (InsertWith f k v ('NatMap lst)) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         ('NatMap (Eval (Fcf.Map (InsWithHelp f k v) lst)))
         ('NatMap (Eval (lst ++ '[ '(k,v)])))
 
@@ -268,7 +267,7 @@ type instance Eval (Lookup k ('NatMap ('(k1,v) ': rst))) =
 -- = 'False
 data Member :: Nat -> NatMap v -> Exp Bool
 type instance Eval (Member k mp) =
-    Eval (Elem k =<< Keys mp)
+    Eval (L.Elem k =<< Keys mp)
 
 -- | NotMember
 --
@@ -282,7 +281,7 @@ type instance Eval (Member k mp) =
 -- = 'True
 data NotMember :: Nat -> NatMap v -> Exp Bool
 type instance Eval (NotMember k mp) =
-    Eval (Not =<< Elem k =<< Keys mp)
+    Eval (Not =<< L.Elem k =<< Keys mp)
 
 -- | Null
 --
@@ -322,7 +321,7 @@ type instance Eval (Union ('NatMap lst1) ('NatMap lst2)) =
 
 data UComb :: (k,v) -> [(k,v)] -> Exp [(k,v)]
 type instance Eval (UComb '(k,v) lst) =
-    If (Eval (Elem k =<< Fcf.Map Fst lst))
+    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
         lst
         ('(k,v) ': lst)
 
@@ -342,7 +341,7 @@ type instance Eval (Difference mp1 mp2) =
 -- helper
 data DiffNotMem :: NatMap v -> k -> v -> Exp Bool
 type instance Eval (DiffNotMem mp k _) =
-    Eval (Not =<< Elem k =<< Keys mp)
+    Eval (Not =<< L.Elem k =<< Keys mp)
 
 
 -- | Intersection
@@ -359,7 +358,7 @@ type instance Eval (Intersection mp1 mp2) =
 
 -- helper
 data InterMem :: NatMap v -> Nat -> v -> Exp Bool
-type instance Eval (InterMem mp k _) = Eval (Elem k =<< Keys mp)
+type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
 
 
 -- | Disjoint
@@ -513,7 +512,7 @@ type instance Eval (FilterWithKey f ('NatMap lst)) =
 -- = '( 'NatMap '[ '(3, 30)], 'NatMap '[ '(5, 50)])
 data Partition :: (v -> Exp Bool) -> NatMap v -> Exp (NatMap v, NatMap v)
 type instance Eval (Partition f ('NatMap lst)) =
-    Eval (PartitionHlp (Eval (Fcf.Partition (f <=< Snd) lst)))
+    Eval (PartitionHlp (Eval (L.Partition (f <=< Snd) lst)))
 
 data PartitionHlp :: ([(Nat,v)],[(Nat,v)]) -> Exp (NatMap v, NatMap v)
 type instance Eval (PartitionHlp '(xs,ys)) = '( 'NatMap xs, 'NatMap ys)

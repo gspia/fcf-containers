@@ -28,12 +28,13 @@ import           Fcf ( If, Eval, Exp, type (<=<), type (=<<)
                      , Flip, Not, TyEq, Pure )
 import           Fcf.Data.List ( ZipWith, Filter, type (++) )
 import           Fcf.Data.Nat (Nat)
+import           Fcf.Data.Symbol (Symbol)
 
 --------------------------------------------------------------------------------
 
 import           Fcf.Alg.Tree (BTreeF(..))
 import           Fcf.Alg.Morphism
-import           Fcf.Data.Symbol (Symbol, SymbolOrd)
+import           Fcf.Alg.Symbol (SymbolOrd)
 
 --------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ import           Fcf.Data.Symbol (Symbol, SymbolOrd)
 
 -- $setup
 -- >>> import qualified Fcf.Data.Nat as N ( type (<) )
--- >>> import qualified Fcf.Data.Symbol as S ( type (<) )
+-- >>> import qualified Fcf.Alg.Symbol as S ( type (<) )
 
 --------------------------------------------------------------------------------
 

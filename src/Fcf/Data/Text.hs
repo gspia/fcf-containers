@@ -47,7 +47,7 @@ module Fcf.Data.Text
     , CompareLength
 
     -- * Transformation
-    , Map
+    , FMap
     , Intercalate
     , Intersperse
     , Reverse
@@ -55,7 +55,7 @@ module Fcf.Data.Text
 
     -- * Special Folds
     , Concat
-    , ConcatMap
+    , FConcatMap
     , Any
     , All
 
@@ -90,22 +90,20 @@ import qualified GHC.TypeLits as TL
 
 import           Fcf ( If, Eval, Exp, type (=<<), type (@@)
                      , Flip, Pure )
+import qualified Fcf.Class.Foldable as F (All, Any)
 import           Fcf.Data.List ( type (++) )
 import qualified Fcf.Data.List as F
     ( Length, Head, Tail, Init, Reverse, Take, Drop, TakeWhile, DropWhile
-    , Foldr)
+    , Foldr, Intercalate, Intersperse, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc)
+import           Fcf.Data.Symbol (Symbol)
+-- import qualified Fcf.Data.Symbol as FS
 
-import qualified Fcf.Class.Functor as F ( Map )
-
-import qualified Fcf.Alg.List as F
-    ( Any, All, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc, Intercalate
-    , Intersperse)
+import qualified Fcf.Class.Functor as F ( FMap )
 
 
 import           Fcf.Data.Nat (Nat)
 import           Fcf.Alg.Morphism (First,Second)
-import           Fcf.Data.Symbol (Symbol)
-import qualified Fcf.Data.Symbol as S
+import qualified Fcf.Alg.Symbol as S
 
 --------------------------------------------------------------------------------
 
@@ -268,7 +266,7 @@ type instance Eval (Uncons ('Text (t ': txt))) = 'Just '(t, 'Text txt)
 -- = 'Nothing
 data Unsnoc :: Text -> Exp (Maybe (Symbol, Text))
 type instance Eval (Unsnoc txt) =
-    Eval (F.Map (Second Reverse) =<< Uncons =<< Reverse txt)
+    Eval (F.FMap (Second Reverse) =<< Uncons =<< Reverse txt)
 
 
 -- | Get the first symbol of type-level text.
@@ -297,7 +295,7 @@ type instance Eval (Head ('Text lst)) = Eval (F.Head lst)
 -- Eval (Tail ('Text '[])) :: Maybe Text
 -- = 'Nothing
 data Tail :: Text -> Exp (Maybe Text)
-type instance Eval (Tail ('Text lst)) = Eval (F.Map FromList =<< F.Tail lst)
+type instance Eval (Tail ('Text lst)) = Eval (F.FMap FromList =<< F.Tail lst)
 
 -- | Take all except the last symbol from type-level text.
 --
@@ -311,7 +309,7 @@ type instance Eval (Tail ('Text lst)) = Eval (F.Map FromList =<< F.Tail lst)
 -- Eval (Init ('Text '[])) :: Maybe Text
 -- = 'Nothing
 data Init :: Text -> Exp (Maybe Text)
-type instance Eval (Init ('Text lst)) = Eval (F.Map FromList =<< F.Init lst)
+type instance Eval (Init ('Text lst)) = Eval (F.FMap FromList =<< F.Init lst)
 
 
 -- | Compare the length of type-level text to given Nat and give
@@ -327,7 +325,7 @@ type instance Eval (CompareLength txt n) = TL.CmpNat (Length @@ txt) n
 
 
 
--- | Map for type-level text.
+-- | FMap for type-level text.
 --
 -- === __Example__
 -- 
@@ -342,11 +340,11 @@ type instance Eval (CompareLength txt n) = TL.CmpNat (Length @@ txt) n
 --     )
 -- :}
 -- 
--- >>> :kind! Eval (Map Isymb2e ('Text '["i","m","u"]))
--- Eval (Map Isymb2e ('Text '["i","m","u"])) :: Text
+-- >>> :kind! Eval (FMap Isymb2e ('Text '["i","m","u"]))
+-- Eval (FMap Isymb2e ('Text '["i","m","u"])) :: Text
 -- = 'Text '["e", "m", "u"]
-data Map :: (Symbol -> Exp Symbol) -> Text -> Exp Text
-type instance Eval (Map f ('Text lst)) = 'Text (Eval (F.Map f lst))
+data FMap :: (Symbol -> Exp Symbol) -> Text -> Exp Text
+type instance Eval (FMap f ('Text lst)) = 'Text (Eval (F.FMap f lst))
 
 
 -- | Intercalate for type-level text.
@@ -358,7 +356,7 @@ type instance Eval (Map f ('Text lst)) = 'Text (Eval (F.Map f lst))
 -- = 'Text '["a", "a", "m", "u", " ", "&", " ", "v", "a", "l", "o"]
 data Intercalate :: Text -> [Text] -> Exp Text
 type instance Eval (Intercalate ('Text txt) txts) =
-    Eval (FromList =<< F.Intercalate txt =<< F.Map ToList txts)
+    Eval (FromList =<< F.Intercalate txt =<< F.FMap ToList txts)
 
 
 -- | Intersperse for type-level text.
@@ -409,7 +407,7 @@ type instance Eval (Concat lst) = Eval (F.Foldr Append (Eval Empty :: Text) lst)
 
 
 
--- | ConcatMap for type-level text.
+-- | FConcatMap for type-level text.
 --
 -- === __Example__
 --
@@ -424,11 +422,11 @@ type instance Eval (Concat lst) = Eval (F.Foldr Append (Eval Empty :: Text) lst)
 --     )
 -- :}
 --
--- >>> :kind! Eval (ConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"]))
--- Eval (ConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"])) :: Text
+-- >>> :kind! Eval (FConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"]))
+-- Eval (FConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"])) :: Text
 -- = 'Text '["a", "a", "m", "u", " ", "a", "a", "h"]
-data ConcatMap :: (Symbol -> Exp Text) -> Text -> Exp Text
-type instance Eval (ConcatMap f ('Text lst)) = Eval (Concat =<< F.Map f lst)
+data FConcatMap :: (Symbol -> Exp Text) -> Text -> Exp Text
+type instance Eval (FConcatMap f ('Text lst)) = Eval (Concat =<< F.FMap f lst)
 
 -- | Any for type-level text.
 --
@@ -586,7 +584,7 @@ type instance Eval (Strip txt) = Eval (DropAround S.IsSpaceDelim txt)
 -- = '[ 'Text '["c", "d"], 'Text '["f", "g"], 'Text '["h"]]
 data SplitOn :: Text -> Text -> Exp [Text]
 type instance Eval (SplitOn ('Text sep) ('Text txt)) =
-    Eval (F.Map FromList =<< SOLoop sep '( '[], txt))
+    Eval (F.FMap FromList =<< SOLoop sep '( '[], txt))
 
 
 -- | Helper for SplitOn
@@ -619,7 +617,7 @@ type instance Eval (SOLoop sep '(acc, (t ': txt))) =
 -- = '[ 'Text '["c", "d"], 'Text '["b", "f"], 'Text '["a", "b", "h"]]
 data Split :: (Symbol -> Exp Bool) -> Text -> Exp [Text]
 type instance Eval (Split p ('Text txt)) =
-    Eval (F.Map FromList =<< SplitLoop p '( '[], txt))
+    Eval (F.FMap FromList =<< SplitLoop p '( '[], txt))
 
 -- | Helper for Split
 data SplitTake :: (Symbol -> Exp Bool) -> [Symbol] -> [Symbol] -> Exp ([Symbol], [Symbol])
@@ -668,7 +666,7 @@ type instance Eval (Words txt) = Eval (Split S.IsSpaceDelim txt)
 -- = 'Text '["o", "k", "\n", "h", "m", "m ", "\n", "a", "b", "\n"]
 data Unlines :: [Text] -> Exp Text
 type instance Eval (Unlines txts) =
-    Eval (Concat =<< F.Map (Flip Append (Singleton @@ "\n")) txts)
+    Eval (Concat =<< F.FMap (Flip Append (Singleton @@ "\n")) txts)
 
 -- | Unwords for type-level text. This uses 'Intercalate' to add space-symbol
 -- between the given texts.
