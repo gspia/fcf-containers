@@ -95,7 +95,7 @@ import qualified Fcf.Data.List as F
     ( Length, Head, Tail, Init, Reverse, Take, Drop, TakeWhile, DropWhile
     , Foldr)
 
-import qualified Fcf.Classes as F ( Map )
+import qualified Fcf.Class.Functor as F ( Map )
 
 import qualified Fcf.Alg.List as F
     ( Any, All, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc, Intercalate

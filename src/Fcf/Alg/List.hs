@@ -30,7 +30,7 @@ module Fcf.Alg.List where
 import qualified GHC.TypeLits as TL
 
 import           Fcf.Core (Eval, Exp, type (@@))
-import           Fcf.Classes (Map)
+import           Fcf.Class.Functor (Map)
 import           Fcf.Combinators (type (=<<), type (<=<), Pure)
 import           Fcf.Data.List (Foldr, Concat, TakeWhile, DropWhile, Reverse
                                , type (++), ZipWith, Elem, Take, Unfoldr)
