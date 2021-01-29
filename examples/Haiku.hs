@@ -45,15 +45,15 @@ import           Fcf.Alg.List (Equal)
 -- | Type-level variable containing vocabulary split in syllables.
 data HaikuWords :: Exp [[Text]]
 type instance Eval HaikuWords =
-    '[ '[ 'Text '["a","a"], 'Text '["m","u"]]
-     , '[ 'Text '["a","a"], 'Text '["m","u","l"], 'Text '["l","a"]]
-     , '[ 'Text '["a"], 'Text '["j","a"], 'Text '["t","u","s"]]
-     , '[ 'Text '["j","o"], 'Text '["k","i","n"]]
-     , '[ 'Text '["k","i","e"], 'Text '["l","i"]]
-     , '[ 'Text '["l","o","i"], 'Text '["k","o","i"], 'Text '["l","e"], 'Text '["v","a"]]
-     , '[ 'Text '["m","u","u"]]
-     , '[ 'Text '["v","a","n"], 'Text '["h","e"], 'Text '["n","e","e"]]
-     , '[ 'Text '["u","u"], 'Text '["s","i"]]
+    '[ '[ 'Text "aa", 'Text "mu"]
+     , '[ 'Text "aa", 'Text "mul", 'Text "la" ]
+     , '[ 'Text "a", 'Text "ja", 'Text "tus"]
+     , '[ 'Text "jo", 'Text "kin"]
+     , '[ 'Text "kie", 'Text "li"]
+     , '[ 'Text "loi", 'Text "koi", 'Text "le", 'Text "va"]
+     , '[ 'Text "muu"]
+     , '[ 'Text "van", 'Text "he", 'Text "nee"]
+     , '[ 'Text "uu", 'Text "si"]
      ]
 
 -- | Turn syllables into words
@@ -75,7 +75,7 @@ type instance Eval WSmap = Eval (WordSyllables =<< HaikuWords)
 
 --------------------------------------------------------------------------------
 
--- | The count of syllables per lines and number of lines that is required for 
+-- | The count of syllables per lines and number of lines that is required for
 -- correct Haiku. This is used for Haiku structural check.
 data ReqSyllablesPerLine :: Exp [Nat]
 type instance Eval ReqSyllablesPerLine = '[5,7,5]
@@ -85,11 +85,11 @@ type instance Eval ReqSyllablesPerLine = '[5,7,5]
 -- | Our executable associated Haiku we want to check.
 data Haiku :: Exp Text
 type instance Eval Haiku =
-    'Text '[ "k","i","e","l","i"," ","v","a","n","h","e","n","e","e","\n"
-           , "l","o","i","k","o","i","l","e","v","a"," ","a","j","a","t","u","s","\n"
-           , "a","a","m","u","l","l","a"," ","u","u","s","i"
-           -- , "j","o", "k","i","n" -- test with clearly wrong input (won't compile)
-           ]
+    'Text "kieli vanhenee\nloikoileva ajatus\naamulla uusi"
+    -- 'Text "kieli vanhenee\nloikoileva ajatus\naamulla uusi jokin"
+    -- -- test with clearly wrong input (won't compile)
+
+
 
 -- | Split the Haiku into more easily processable form
 data HaikuAsLineWords :: Exp [[Text]]
@@ -104,8 +104,8 @@ type instance Eval (SumJusts (n ': ns) acc) = Eval
         (SumJusts ns (Eval (acc + (Eval (FromMaybe 0 n) ))))
     )
 
--- | The main method, we list of lines, and on each line a list of words,
--- for which we try to find out the syllable count from our map, 
+-- | The main method, we list lines, and on each line a list of words,
+-- for which we try to find out the syllable count from our map,
 -- and as a last thing we count the syllable sums for each line.
 data HaikuSyllCountsPerLine :: Exp [Nat]
 type instance Eval HaikuSyllCountsPerLine =
@@ -113,7 +113,7 @@ type instance Eval HaikuSyllCountsPerLine =
       =<< Fcf.Map (Fcf.Map (Flip M.Lookup (Eval WSmap)))
       =<< HaikuAsLineWords)
 
--- | To check the Haiku, compare the correct number of syllables (and at the
+-- | To check the Haiku, compare the correct number of syllables (and at the
 -- same time, number of lines) to the figures we got from the input Haiku.
 data CheckHaiku :: Exp Bool
 type instance Eval CheckHaiku =

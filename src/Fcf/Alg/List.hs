@@ -60,7 +60,7 @@ type instance Eval (FMap f ('ConsF a b)) = 'ConsF a (Eval (f b))
 -- | ListToFix can be used to turn a norma type-level list into the base
 -- functor type ListF, to be used with e.g. Cata. For examples in use, see
 -- 'LenAlg' and 'SumAlg'.
--- 
+--
 -- Ideally, we would have one ToFix type-level function for which we could
 -- give type instances for different type-level types, like lists, trees
 -- etc. See TODO.md.
@@ -75,7 +75,7 @@ type instance Eval (ListToFix '[]) = 'Fix 'NilF
 type instance Eval (ListToFix (a ': as)) = 'Fix ('ConsF a (Eval (ListToFix as)))
 
 -- | Example algebra to calculate list length.
--- 
+--
 -- === __Example__
 --
 -- >>> :kind! Eval (Cata LenAlg =<< ListToFix '[1,2,3])
@@ -86,7 +86,7 @@ type instance Eval (LenAlg 'NilF) = 0
 type instance Eval (LenAlg ('ConsF a b)) = 1 TL.+ b
 
 -- | Example algebra to calculate the sum of Nats in a list.
--- 
+--
 -- === __Example__
 --
 -- >>> :kind! Eval (Cata SumAlg =<< ListToFix '[1,2,3,4])
@@ -110,7 +110,7 @@ type instance Eval (ProdAlg ('ConsF a b)) = a TL.* b
 --------------------------------------------------------------------------------
 
 -- | Form a Fix-structure that can be used with Para.
--- 
+--
 -- === __Example__
 --
 -- >>> :kind! Eval (ListToParaFix '[1,2,3])
@@ -125,7 +125,7 @@ type instance Eval (ListToParaFix (a ': as)) =
     'Fix ('ConsF '(a,as) (Eval (ListToParaFix as)))
 
 -- | Example from recursion-package by Vanessa McHale.
--- 
+--
 -- This removes duplicates from a list (by keeping the right-most one).
 --
 -- === __Example__
@@ -221,11 +221,31 @@ type instance Eval (Sum ns) = Eval (Foldr (+) 0 ns)
 
 --------------------------------------------------------------------------------
 
+-- | Helper to form Nat lists like [1..5] or [3..10]
+--
+-- :kind! Eval (Unfoldr ToThree 1)
+data MToNHelp :: Nat -> Nat -> Exp (Maybe (Nat, Nat))
+type instance Eval (MToNHelp n b) =
+    If (Eval (b >= (n TL.+1)))
+        'Nothing
+        ('Just '(b, b TL.+ 1))
+
+-- | Function to form Nat lists like [1..5] or [3..10]
+--
+-- === __Example__
+--
+-- >>> :kind! Eval (MToN 1 3)
+-- Eval (MToN 1 3) :: [Nat]
+-- = '[1, 2, 3]
+data MToN :: Nat -> Nat -> Exp [Nat]
+type instance Eval (MToN m n) = Eval (Unfoldr (MToNHelp n) m)
+
+
 
 -- | ToList for type-level lists.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (ToList 1)
 -- Eval (ToList 1) :: [Nat]
 -- = '[1]
@@ -236,7 +256,7 @@ type instance Eval (ToList a) = '[a]
 -- | Equal tests for list equality. We may change the name to (==).
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Equal '[1,2,3] '[1,2,3])
 -- Eval (Equal '[1,2,3] '[1,2,3]) :: Bool
 -- = 'True
@@ -246,5 +266,4 @@ type instance Eval (ToList a) = '[a]
 -- = 'False
 data Equal :: [a] -> [a] -> Exp Bool
 type instance Eval (Equal as bs) = Eval (And =<< ZipWith TyEq as bs)
-
 

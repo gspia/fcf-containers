@@ -1,3 +1,13 @@
+# 0.6.0
+
+ - use symbol as text representation (we can split predefined char-sets, as shown
+   by the Csongor at https://kcsongor.github.io/symbol-parsing-haskell/ see also
+   the symbols-package)
+ - and hie.yaml (for language server)
+ - minor documentation fixes
+ - add new example that really stresses ghc (Advent-of-code 2020, day 22b)
+ - MToN to Alg.List (this generates Nat-list from M to N)
+ - Nat equality and inequality test
 
 # 0.5.0
 

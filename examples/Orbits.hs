@@ -58,13 +58,13 @@ type instance Eval OrbitInput =
 data EqPlanet :: TL.Symbol -> TL.Symbol -> Exp Bool
 type instance Eval (EqPlanet a b) = Eval (TyEq 'EQ (TL.CmpSymbol a b))
 
--- | :kind! Eval (FindDescs "COM" =<< OrbitInput)
+-- | :kind! Eval (FindDescs "COM" =<< OrbitInput)
 data FindDescs :: TL.Symbol -> [(TL.Symbol, TL.Symbol)] -> Exp [TL.Symbol]
 type instance Eval (FindDescs p lst) = 
     Eval (Map Snd =<< (Filter (EqPlanet p <=< Fst) lst))
 
 -- | This is not used in the final solution but worked as a step towards it.
--- 
+--
 -- :kind! Eval (Ana BuildOrbTreeCoA "COM")
 data BuildOrbTreeCoA :: CoAlgebra (TreeF TL.Symbol) TL.Symbol
 type instance Eval (BuildOrbTreeCoA nd) =
@@ -72,7 +72,7 @@ type instance Eval (BuildOrbTreeCoA nd) =
         ('NodeF nd '[])
         ('NodeF nd (Eval (FindDescs nd =<< OrbitInput)))
 
--- | 
+-- |
 -- We need to store the depth of the node along the tree. We use the depth when
 -- counting paths from root to every node.
 --
@@ -93,16 +93,16 @@ type instance Eval (MkPairLst n lst) = Eval (Map (MkPair n) lst)
 
 
 -- | Count paths from root to every node.
--- 
+--
 -- If it is a leaf, the number of paths from root to it is the depth.
--- If it is an internal node, the number of paths to the subtree rooted 
+-- If it is an internal node, the number of paths to the subtree rooted
 -- by it is sum of pathnums of subtrees plus the depth (paths to this one).
 data CountPathsAlg :: Algebra (TreeF (Nat,TL.Symbol)) Nat
 type instance Eval (CountPathsAlg ('NodeF '(d,_) '[])) = d
 type instance Eval (CountPathsAlg ('NodeF '(d,_) (b ': bs))) = d TL.+ (Eval (Sum (b ': bs)))
 
 
--- | We initialize this with the known starting node and the depth of it, which 
+-- | We initialize this with the known starting node and the depth of it, which
 -- is 0.
 --
 -- :kind! Eval OrbitSolution
@@ -111,7 +111,7 @@ type instance Eval OrbitSolution =
     Eval (Hylo CountPathsAlg BuildOrbTreeCoA2 '(0,"COM"))
 
 -- | Helper to bring in the result of the type-level computation.
--- 
+--
 -- It is a nice exercise to solve this using Tree, UnfoldTree and FoldTree.
 showResult :: forall n. (n ~ Eval OrbitSolution) => String
 showResult = show $ TL.natVal @n Proxy

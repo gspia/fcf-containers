@@ -55,8 +55,8 @@ module Fcf.Alg.Symbol
   where
 
 --------------------------------------------------------------------------------
-        
-import           GHC.TypeLits (Symbol)
+
+-- import           GHC.TypeLits (Symbol)
 import qualified GHC.TypeLits as TL
 
 import           Fcf.Core (Eval, Exp)
@@ -72,7 +72,7 @@ import           Fcf.Combinators (type (=<<))
 -- | Append two type-level symbols.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Append "hmm" " ok")
 -- Eval (Append "hmm" " ok") :: Symbol
 -- = "hmm ok"
@@ -81,9 +81,9 @@ type instance Eval (Append s1 s2) = TL.AppendSymbol s1 s2
 
 
 -- | Intercalate type-level symbols.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Intercalate "+" '["aa", "bb", "cc"])
 -- Eval (Intercalate "+" '["aa", "bb", "cc"]) :: Symbol
 -- = "aa+bb+cc"
@@ -108,7 +108,7 @@ type instance Eval (InterCalHelp s s1 s2) = Eval (Append (Eval (Append s s1)) s2
 -- | IsSpace
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsSpace "a")
 -- Eval (IsSpace "a") :: Bool
 -- = 'False
@@ -123,7 +123,7 @@ type instance Eval (IsSpace s) = Eval (s == " ")
 -- | IsNewline
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsNewLine "a")
 -- Eval (IsNewLine "a") :: Bool
 -- = 'False
@@ -138,7 +138,7 @@ type instance Eval (IsNewLine s) = Eval (s == "\n")
 -- | IsTab
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsTab "a")
 -- Eval (IsTab "a") :: Bool
 -- = 'False
@@ -150,10 +150,10 @@ data IsTab :: Symbol -> Exp Bool
 type instance Eval (IsTab s) = Eval (s == "\t")
 
 
--- | IsSpaceDelim
+-- | IsSpaceDelim
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsSpaceDelim "a")
 -- Eval (IsSpaceDelim "a") :: Bool
 -- = 'False
@@ -166,10 +166,10 @@ type instance Eval (IsSpaceDelim s) =
     Eval (Eval (IsSpace s) || (Eval (Eval (IsNewLine s) || Eval (IsTab s))))
 
 
--- | IsDigit
+-- | IsDigit
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsDigit "3")
 -- Eval (IsDigit "3") :: Bool
 -- = 'True
@@ -186,11 +186,11 @@ type instance Eval (IsDigit s)
 --------------------------------------------------------------------------------
 
 
--- | SymbolOrd - compare two symbols and give type-level Ordering 
--- ( $ 'LT $, $ 'EQ $ or $ 'GT $ ).
+-- | SymbolOrd - compare two symbols and give type-level Ordering
+-- ( $ 'LT $, $ 'EQ $ or $ 'GT $ ).
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (SymbolOrd "a" "b")
 -- Eval (SymbolOrd "a" "b") :: Ordering
 -- = 'LT
@@ -198,9 +198,9 @@ data SymbolOrd :: Symbol -> Symbol -> Exp Ordering
 type instance Eval (SymbolOrd a b) = TL.CmpSymbol a b
 
 -- | Less-than-or-equal comparison for symbols.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval ("b" <= "a")
 -- Eval ("b" <= "a") :: Bool
 -- = 'False
@@ -210,9 +210,9 @@ type instance Eval ((<=) a b) =
     Eval (Eval (TyEq (TL.CmpSymbol a b) 'LT) || Eval (TyEq (TL.CmpSymbol a b) 'EQ))
 
 -- | Larger-than-or-equal comparison for symbols.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval ("b" >= "a")
 -- Eval ("b" >= "a") :: Bool
 -- = 'True
@@ -221,9 +221,9 @@ type instance Eval ((>=) a b) =
     Eval (Eval (TyEq (TL.CmpSymbol a b) 'GT) || Eval (TyEq (TL.CmpSymbol a b) 'EQ))
 
 -- | Less-than comparison for symbols.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval ("a" < "b")
 -- Eval ("a" < "b") :: Bool
 -- = 'True
@@ -231,9 +231,9 @@ data (<) :: Symbol -> Symbol -> Exp Bool
 type instance Eval ((<) a b) = Eval (TyEq (TL.CmpSymbol a b) 'LT)
 
 -- | Larger-than comparison for symbols.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval ("b" > "a")
 -- Eval ("b" > "a") :: Bool
 -- = 'True
@@ -241,9 +241,9 @@ data (>) :: Symbol -> Symbol -> Exp Bool
 type instance Eval ((>) a b) = Eval (TyEq (TL.CmpSymbol a b) 'GT)
 
 -- | Equality of symbols
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval ("b" == "a")
 -- Eval ("b" == "a") :: Bool
 -- = 'False

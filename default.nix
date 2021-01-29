@@ -22,6 +22,12 @@ let
               rev    = "4a0bf3ea9c125bb4009b61ce70b1a5339b7b2072";
               sha256 = "14387mpfvds226iynkpay3aaqamvxznxjsmg2qcwdxafdvxmyq9z";
             }) {};
+            # something for the next version?
+            #  rev    = "9fe4ce36cf1cd4b0f5af59c923c15b9085c48cd6";
+            #  sha256 = "1677ylhhf1mwwfs6j2p6gbn2f6mzsx4zmaihz8v9v07h845wz8l7";
+            # 0.8.0
+            # rev    = "4a0bf3ea9c125bb4009b61ce70b1a5339b7b2072";
+            # sha256 = "14387mpfvds226iynkpay3aaqamvxznxjsmg2qcwdxafdvxmyq9z";
             # (pkgs.fetchFromGitHub { # 0.7
             #   owner  = "Lysxia";
             #   repo   = "first-class-families";
@@ -41,6 +47,7 @@ let
   adjust-for-ghc = drv: {
     executableSystemDepends = [
       hpkgs.ghcid
+      hpkgs.ghcide
       hpkgs.cabal-install
     ];
     buildDepends = [

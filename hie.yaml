@@ -1,0 +1,6 @@
+cradle:
+  direct:
+    arguments:
+      - -isrc
+      - -itest
+      - -iexamples

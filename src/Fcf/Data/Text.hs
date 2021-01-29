@@ -89,12 +89,12 @@ module Fcf.Data.Text
 import qualified GHC.TypeLits as TL
 
 import           Fcf ( If, Eval, Exp, type (=<<), type (@@)
-                     , Flip, Pure )
+                     , Flip, Pure)
 import qualified Fcf.Class.Foldable as F (All, Any)
 import           Fcf.Data.List ( type (++) )
 import qualified Fcf.Data.List as F
-    ( Length, Head, Tail, Init, Reverse, Take, Drop, TakeWhile, DropWhile
-    , Foldr, Intercalate, Intersperse, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc)
+    ( Length, Init, Reverse, Take, Drop, TakeWhile, DropWhile
+    , Intercalate, Intersperse, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc)
 import           Fcf.Data.Symbol (Symbol)
 -- import qualified Fcf.Data.Symbol as FS
 
@@ -102,8 +102,11 @@ import qualified Fcf.Class.Functor as F ( FMap )
 
 
 import           Fcf.Data.Nat (Nat)
+import qualified Fcf.Data.Text.Internal as T
+import           Fcf.Alg.Other ( PairMaybeToMaybePair )
 import           Fcf.Alg.Morphism (First,Second)
 import qualified Fcf.Alg.Symbol as S
+import           Fcf.Alg.Nat (type (==))
 
 --------------------------------------------------------------------------------
 
@@ -117,155 +120,176 @@ import qualified Fcf.Alg.Symbol as S
 
 -- | 'Text' is a data structure, that is, a list to hold type-level symbols of
 -- length one.
-data Text = Text [Symbol]
+data Text = Text Symbol
 
 --------------------------------------------------------------------------------
 
 -- | Empty
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! (Eval Empty :: Text)
 -- (Eval Empty :: Text) :: Text
--- = 'Text '[]
+-- = 'Text ""
 --
 -- See also the other examples in this module.
 data Empty :: Exp Text
-type instance Eval Empty = 'Text '[]
+type instance Eval Empty = 'Text ""
 
--- | Singleton
--- 
--- === __Example__
--- 
--- >>> :kind! Eval (Singleton "a")
--- Eval (Singleton "a") :: Text
--- = 'Text '["a"]
-data Singleton :: Symbol -> Exp Text
-type instance Eval (Singleton s) = 'Text '[s]
-
-
-
--- | Use FromList to construct a Text from type-level list.
+-- | Singleton
 --
 -- === __Example__
--- 
--- :kind! Eval (FromList '["h", "e", "l", "l", "u", "r", "e", "i"])
--- Eval (FromList '["h", "e", "l", "l", "u", "r", "e", "i"]) :: Text
--- = 'Text '["h", "e", "l", "l", "u", "r", "e", "i"]
-data FromList :: [Symbol] -> Exp Text
-type instance Eval (FromList lst) = 'Text lst
+--
+-- >>> :kind! Eval (Singleton "a")
+-- Eval (Singleton "a") :: Text
+-- = 'Text "a"
+data Singleton :: Symbol -> Exp Text
+type instance Eval (Singleton s) = 'Text s
+
+
+
+-- | Use FromList to construct a Text from type-level list.
+--
+-- === __Example__
+--
+-- :kind! Eval (FromSymbolList '["h", "e", "l", "l", "u", "r", "e", "i"])
+-- Eval (FromSymbolList '["h", "e", "l", "l", "u", "r", "e", "i"]) :: Text
+-- = 'Text "hellurei"
+data FromSymbolList :: [Symbol] -> Exp Text
+type instance Eval (FromSymbolList sym) =  'Text (T.ToSymbol2 @@ sym)
+
+
+-- hmm, this is also a Monoid, so we should be able to use Concat
+data FromList :: [Text] -> Exp Text
+type instance Eval (FromList txt) =
+    'Text (T.ToSymbol2 @@ Eval (F.FMap ToSymbol txt))
 
 -- | Get the type-level list out of the 'Text'.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (ToList =<< FromList '["a", "b"])
--- Eval (ToList =<< FromList '["a", "b"]) :: [Symbol]
+--
+-- >>> :kind! Eval (ToSymbolList =<< FromSymbolList '["a", "b"])
+-- Eval (ToSymbolList =<< FromSymbolList '["a", "b"]) :: [Symbol]
 -- = '["a", "b"]
-data ToList :: Text -> Exp [Symbol]
-type instance Eval (ToList ('Text lst)) = lst
+data ToSymbolList :: Text -> Exp [Symbol]
+type instance Eval (ToSymbolList ('Text sym)) = T.ToListA @@ sym
+
+
+-- | Split 'Text' to single character 'Text' list.
+--
+-- === __Example__
+--
+-- >>> :kind! Eval (ToList =<< FromSymbolList '["a", "b"])
+-- Eval (ToList =<< FromSymbolList '["a", "b"]) :: [Text]
+-- = '[ 'Text "a", 'Text "b"]
+data ToList :: Text -> Exp [Text]
+type instance Eval (ToList txt) = Eval (F.FMap Singleton =<< ToSymbolList txt)
 
 
 -- | ToSymbol
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (ToSymbol =<< FromList '["w", "o", "r", "d"])
--- Eval (ToSymbol =<< FromList '["w", "o", "r", "d"]) :: Symbol
+--
+-- >>> :kind! Eval (ToSymbol =<< FromSymbolList '["w", "o", "r", "d"])
+-- Eval (ToSymbol =<< FromSymbolList '["w", "o", "r", "d"]) :: Symbol
 -- = "word"
 data ToSymbol :: Text -> Exp Symbol
-type instance Eval (ToSymbol ('Text lst)) = Eval (F.Foldr S.Append "" lst)
+type instance Eval (ToSymbol ('Text sym)) = sym
 
 
 
 -- | Null
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Null =<< FromList '["a", "b"])
--- Eval (Null =<< FromList '["a", "b"]) :: Bool
+--
+-- >>> :kind! Eval (Null ('Text "ab"))
+-- Eval (Null ('Text "ab")) :: Bool
 -- = 'False
+--
 -- >>> :kind! Eval (Null =<< Empty)
 -- Eval (Null =<< Empty) :: Bool
 -- = 'True
 data Null :: Text -> Exp Bool
-type instance Eval (Null ('Text '[])) = 'True
-type instance Eval (Null ('Text (_ ': _))) = 'False
+type instance Eval (Null txt) = Eval
+    (If (Eval (Eval (Length txt) == 0))
+        (Pure 'True)
+        (Pure 'False)
+    )
 
 
 -- | Length
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Length =<< FromList '["a", "b"])
--- Eval (Length =<< FromList '["a", "b"]) :: Nat
+--
+-- >>> :kind! Eval (Length =<< Singleton "ab")
+-- Eval (Length =<< Singleton "ab") :: Nat
 -- = 2
 data Length :: Text -> Exp Nat
-type instance Eval (Length ('Text lst)) = Eval (F.Length lst)
+type instance Eval (Length ('Text sym)) = Eval (F.Length (T.ToList sym))
 
 
 -- | Add a symbol to the beginning of a type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Cons "h" ('Text '["a", "a", "m", "u"]))
--- Eval (Cons "h" ('Text '["a", "a", "m", "u"])) :: Text
--- = 'Text '["h", "a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (Cons "h" ('Text "aamu"))
+-- Eval (Cons "h" ('Text "aamu")) :: Text
+-- = 'Text "haamu"
 data Cons :: Symbol -> Text -> Exp Text
-type instance Eval (Cons s ('Text lst)) = 'Text (s ': lst)
+type instance Eval (Cons s ('Text sym)) = 'Text (TL.AppendSymbol s sym)
 
 -- | Add a symbol to the end of a type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Snoc ('Text '["a", "a", "m"]) "u")
--- Eval (Snoc ('Text '["a", "a", "m"]) "u") :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (Snoc ('Text "aam") "u")
+-- Eval (Snoc ('Text "aam") "u") :: Text
+-- = 'Text "aamu"
 data Snoc :: Text -> Symbol -> Exp Text
-type instance Eval (Snoc ('Text lst) s) = 'Text (Eval (lst ++ '[s]))
+type instance Eval (Snoc ('Text sym) s) = 'Text (TL.AppendSymbol sym s)
 
 -- | Append two type-level texts.
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Append ('Text '["a", "a"]) ('Text '["m", "u"]))
--- Eval (Append ('Text '["a", "a"]) ('Text '["m", "u"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+-- >>> :kind! Eval (Append ('Text "aa") ('Text "mu"))
+-- Eval (Append ('Text "aa") ('Text "mu")) :: Text
+-- = 'Text "aamu"
 data Append :: Text -> Text -> Exp Text
-type instance Eval (Append ('Text l1) ('Text l2)) = 'Text (Eval (l1 ++ l2))
+type instance Eval (Append ('Text s1) ('Text s2)) = 'Text (TL.AppendSymbol s1 s2)
 
 
 -- | Get the first symbol from type-level text.
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Uncons ('Text '["h", "a", "a", "m", "u"]))
--- Eval (Uncons ('Text '["h", "a", "a", "m", "u"])) :: Maybe
---                                                       (Symbol, Text)
--- = 'Just '("h", 'Text '["a", "a", "m", "u"])
+-- >>> :kind! Eval (Uncons ('Text "haamu"))
+-- Eval (Uncons ('Text "haamu")) :: Maybe (Symbol, Text)
+-- = 'Just '("h", 'Text "aamu")
 --
--- >>> :kind! Eval (Uncons ('Text '[]))
--- Eval (Uncons ('Text '[])) :: Maybe (Symbol, Text)
+-- >>> :kind! Eval (Uncons ('Text ""))
+-- Eval (Uncons ('Text "")) :: Maybe (Symbol, Text)
 -- = 'Nothing
-data Uncons :: Text -> Exp (Maybe (Symbol, Text))
-type instance Eval (Uncons ('Text '[])) = 'Nothing
-type instance Eval (Uncons ('Text (t ': txt))) = 'Just '(t, 'Text txt)
+data Uncons :: Text -> Exp (Maybe (TL.Symbol, Text))
+type instance Eval (Uncons txt) =
+    Eval (PairMaybeToMaybePair '( Eval (Head txt), Eval (Tail txt) ))
+
+
 
 
 -- | Get the last symbol from type-level text.
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Unsnoc ('Text '["a", "a", "m", "u", "n"]))
--- Eval (Unsnoc ('Text '["a", "a", "m", "u", "n"])) :: Maybe
---                                                       (Symbol, Text)
--- = 'Just '("n", 'Text '["a", "a", "m", "u"])
+-- >>> :kind! Eval (Unsnoc ('Text "aamun"))
+-- Eval (Unsnoc ('Text "aamun")) :: Maybe (Symbol, Text)
+-- = 'Just '("n", 'Text "aamu")
 --
--- >>> :kind! Eval (Unsnoc ('Text '[]))
--- Eval (Unsnoc ('Text '[])) :: Maybe (Symbol, Text)
+-- >>> :kind! Eval (Unsnoc ('Text ""))
+-- Eval (Unsnoc ('Text "")) :: Maybe (Symbol, Text)
 -- = 'Nothing
 data Unsnoc :: Text -> Exp (Maybe (Symbol, Text))
-type instance Eval (Unsnoc txt) =
+type instance Eval (Unsnoc txt) = 
     Eval (F.FMap (Second Reverse) =<< Uncons =<< Reverse txt)
 
 
@@ -273,52 +297,56 @@ type instance Eval (Unsnoc txt) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Head ('Text '["a", "a", "m", "u"]))
--- Eval (Head ('Text '["a", "a", "m", "u"])) :: Maybe Symbol
+-- >>> :kind! Eval (Head ('Text "aamu"))
+-- Eval (Head ('Text "aamu")) :: Maybe Symbol
 -- = 'Just "a"
--- 
--- >>> :kind! Eval (Head ('Text '[]))
--- Eval (Head ('Text '[])) :: Maybe Symbol
+--
+-- >>> :kind! Eval (Head ('Text ""))
+-- Eval (Head ('Text "")) :: Maybe Symbol
 -- = 'Nothing
 data Head :: Text -> Exp (Maybe Symbol)
-type instance Eval (Head ('Text lst)) = Eval (F.Head lst)
+type instance Eval (Head ('Text sym)) = Eval
+    (If (Eval (Eval (Length ('Text sym)) == 0))
+        (Pure 'Nothing)
+        (Pure ('Just (T.Head1 sym (TL.CmpSymbol sym "\128"))))
+    )
 
 -- | Get the tail of a type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Tail ('Text '["h", "a", "a", "m", "u"]))
--- Eval (Tail ('Text '["h", "a", "a", "m", "u"])) :: Maybe Text
--- = 'Just ('Text '["a", "a", "m", "u"])
 --
--- >>> :kind! Eval (Tail ('Text '[]))
--- Eval (Tail ('Text '[])) :: Maybe Text
+-- >>> :kind! Eval (Tail ('Text "haamu"))
+-- Eval (Tail ('Text "haamu")) :: Maybe Text
+-- = 'Just ('Text "aamu")
+--
+-- >>> :kind! Eval (Tail ('Text ""))
+-- Eval (Tail ('Text "")) :: Maybe Text
 -- = 'Nothing
 data Tail :: Text -> Exp (Maybe Text)
-type instance Eval (Tail ('Text lst)) = Eval (F.FMap FromList =<< F.Tail lst)
+type instance Eval (Tail ('Text sym)) = Eval (F.FMap Singleton =<< T.Uncons sym)
 
 -- | Take all except the last symbol from type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Init ('Text '["a", "a", "m", "u", "n"]))
--- Eval (Init ('Text '["a", "a", "m", "u", "n"])) :: Maybe Text
--- = 'Just ('Text '["a", "a", "m", "u"])
 --
--- >>> :kind! Eval (Init ('Text '[]))
--- Eval (Init ('Text '[])) :: Maybe Text
+-- >>> :kind! Eval (Init ('Text "aamun"))
+-- Eval (Init ('Text "aamun")) :: Maybe Text
+-- = 'Just ('Text "aamu")
+--
+-- >>> :kind! Eval (Init ('Text ""))
+-- Eval (Init ('Text "")) :: Maybe Text
 -- = 'Nothing
 data Init :: Text -> Exp (Maybe Text)
-type instance Eval (Init ('Text lst)) = Eval (F.FMap FromList =<< F.Init lst)
+type instance Eval (Init txt) = Eval (F.FMap FromList =<< F.Init =<< ToList txt)
 
 
 -- | Compare the length of type-level text to given Nat and give
 -- the Ordering.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (CompareLength ('Text '["a", "a", "m", "u"]) 3)
--- Eval (CompareLength ('Text '["a", "a", "m", "u"]) 3) :: Ordering
+--
+-- >>> :kind! Eval (CompareLength ('Text "aamu") 3)
+-- Eval (CompareLength ('Text "aamu") 3) :: Ordering
 -- = 'GT
 data CompareLength :: Text -> Nat -> Exp Ordering
 type instance Eval (CompareLength txt n) = TL.CmpNat (Length @@ txt) n
@@ -328,7 +356,7 @@ type instance Eval (CompareLength txt n) = TL.CmpNat (Length @@ txt) n
 -- | FMap for type-level text.
 --
 -- === __Example__
--- 
+--
 -- >>> :{
 -- data IsIsymb :: Symbol -> Exp Bool
 -- type instance Eval (IsIsymb s) = Eval ("i" S.== s)
@@ -339,57 +367,61 @@ type instance Eval (CompareLength txt n) = TL.CmpNat (Length @@ txt) n
 --         (Pure s)
 --     )
 -- :}
--- 
--- >>> :kind! Eval (FMap Isymb2e ('Text '["i","m","u"]))
--- Eval (FMap Isymb2e ('Text '["i","m","u"])) :: Text
--- = 'Text '["e", "m", "u"]
+--
+-- >>> :kind! Eval (FMap Isymb2e ('Text "imu"))
+-- Eval (FMap Isymb2e ('Text "imu")) :: Text
+-- = 'Text "emu"
 data FMap :: (Symbol -> Exp Symbol) -> Text -> Exp Text
-type instance Eval (FMap f ('Text lst)) = 'Text (Eval (F.FMap f lst))
+type instance Eval (FMap f txt) = Eval (FromSymbolList =<< F.FMap f =<< ToSymbolList txt)
+
+data FMapT :: (Text -> Exp Text) -> Text -> Exp Text
+type instance Eval (FMapT f txt) = Eval (FromList =<< F.FMap f =<< ToList txt)
 
 
 -- | Intercalate for type-level text.
--- 
+--
 -- === __Example__
--- 
--- >>> :kind! Eval (Intercalate ('Text '[" ", "&", " "]) ('[ 'Text '["a", "a", "m", "u"], 'Text '["v", "a", "l", "o"]]))
--- Eval (Intercalate ('Text '[" ", "&", " "]) ('[ 'Text '["a", "a", "m", "u"], 'Text '["v", "a", "l", "o"]])) :: Text
--- = 'Text '["a", "a", "m", "u", " ", "&", " ", "v", "a", "l", "o"]
+--
+-- >>> :kind! Eval (Intercalate ('Text " & ") ('[ 'Text "aamu", 'Text "valo"]))
+-- Eval (Intercalate ('Text " & ") ('[ 'Text "aamu", 'Text "valo"])) :: Text
+-- = 'Text "aamu & valo"
 data Intercalate :: Text -> [Text] -> Exp Text
-type instance Eval (Intercalate ('Text txt) txts) =
-    Eval (FromList =<< F.Intercalate txt =<< F.FMap ToList txts)
+type instance Eval (Intercalate txt txts) = 
+    Eval (FromList =<< F.Intercalate '[txt] =<< F.FMap ToList txts)
 
 
 -- | Intersperse for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Intersperse "." ('Text '["a", "a", "m", "u"]))
--- Eval (Intersperse "." ('Text '["a", "a", "m", "u"])) :: Text
--- = 'Text '["a", ".", "a", ".", "m", ".", "u"]
+--
+-- >>> :kind! Eval (Intersperse "." ('Text "aamu"))
+-- Eval (Intersperse "." ('Text "aamu")) :: Text
+-- = 'Text "a.a.m.u"
 data Intersperse :: Symbol -> Text -> Exp Text
-type instance Eval (Intersperse s ('Text txt)) = Eval (FromList =<< F.Intersperse s txt)
+type instance Eval (Intersperse s ('Text txt)) =
+    Eval (FromSymbolList =<< F.Intersperse s (T.ToList txt))
 
 -- | Reverse for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Reverse ('Text '["a", "a", "m", "u"]))
--- Eval (Reverse ('Text '["a", "a", "m", "u"])) :: Text
--- = 'Text '["u", "m", "a", "a"]
 --
--- >>> :kind! Eval (Reverse =<< Reverse ('Text '["a", "a", "m", "u"]))
--- Eval (Reverse =<< Reverse ('Text '["a", "a", "m", "u"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+-- >>> :kind! Eval (Reverse ('Text "aamu"))
+-- Eval (Reverse ('Text "aamu")) :: Text
+-- = 'Text "umaa"
+--
+-- >>> :kind! Eval (Reverse =<< Reverse ('Text "aamu"))
+-- Eval (Reverse =<< Reverse ('Text "aamu")) :: Text
+-- = 'Text "aamu"
 data Reverse :: Text -> Exp Text
-type instance Eval (Reverse ('Text lst)) = 'Text (Eval (F.Reverse lst))
+type instance Eval (Reverse txt) =  Eval (FromList =<< F.Reverse =<< ToList txt)
 
 -- | Replace for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Replace ('Text '["t","u"]) ('Text '["l","a"]) ('Text '["t","u","u","t","u","t","t","a","a"]))
--- Eval (Replace ('Text '["t","u"]) ('Text '["l","a"]) ('Text '["t","u","u","t","u","t","t","a","a"])) :: Text
--- = 'Text '["l", "a", "u", "l", "a", "t", "t", "a", "a"]
+--
+-- >>> :kind! Eval (Replace ('Text "tu") ('Text "la") ('Text "tuututtaa"))
+-- Eval (Replace ('Text "tu") ('Text "la") ('Text "tuututtaa")) :: Text
+-- = 'Text "laulattaa"
 data Replace :: Text -> Text -> Text -> Exp Text
 type instance Eval (Replace orig new txt) =
     Eval (Intercalate new =<< SplitOn orig txt)
@@ -398,12 +430,13 @@ type instance Eval (Replace orig new txt) =
 -- | Concat for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Concat '[ 'Text '["l","a"], 'Text '["k","a","n","a"]])
--- Eval (Concat '[ 'Text '["l","a"], 'Text '["k","a","n","a"]]) :: Text
--- = 'Text '["l", "a", "k", "a", "n", "a"]
+--
+-- >>> :kind! Eval (Concat '[ 'Text "la", 'Text "kana"])
+-- Eval (Concat '[ 'Text "la", 'Text "kana"]) :: Text
+-- = 'Text "lakana"
 data Concat :: [Text] -> Exp Text
-type instance Eval (Concat lst) = Eval (F.Foldr Append (Eval Empty :: Text) lst)
+type instance Eval (Concat lst) = 
+    'Text (T.ToSymbol2 @@ Eval (F.FMap ToSymbol lst))
 
 
 
@@ -417,45 +450,45 @@ type instance Eval (Concat lst) = Eval (F.Foldr Append (Eval Empty :: Text) lst)
 -- data Isymb2aa :: Symbol -> Exp Text
 -- type instance Eval (Isymb2aa s) = Eval
 --     (If (IsIsymb @@ s)
---         (Pure ('Text '["a","a"]))
---         (Pure ('Text '[s]))
+--         (Pure ('Text "aa"))
+--         (Pure ('Text s))
 --     )
 -- :}
 --
--- >>> :kind! Eval (FConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"]))
--- Eval (FConcatMap Isymb2aa ('Text '["i","m","u"," ","i","h"])) :: Text
--- = 'Text '["a", "a", "m", "u", " ", "a", "a", "h"]
+-- >>> :kind! Eval (FConcatMap Isymb2aa ('Text "imu ih"))
+-- Eval (FConcatMap Isymb2aa ('Text "imu ih")) :: Text
+-- = 'Text "aamu aah"
 data FConcatMap :: (Symbol -> Exp Text) -> Text -> Exp Text
-type instance Eval (FConcatMap f ('Text lst)) = Eval (Concat =<< F.FMap f lst)
+type instance Eval (FConcatMap f ('Text lst)) = Eval (Concat =<< F.FMap f (T.ToList lst))
 
 -- | Any for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Any S.IsDigit ('Text '["a","a","m","u","1"]))
--- Eval (Any S.IsDigit ('Text '["a","a","m","u","1"])) :: Bool
+--
+-- >>> :kind! Eval (Any S.IsDigit ('Text "aamu1"))
+-- Eval (Any S.IsDigit ('Text "aamu1")) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (Any S.IsDigit ('Text '["a","a","m","u"]))
--- Eval (Any S.IsDigit ('Text '["a","a","m","u"])) :: Bool
+-- >>> :kind! Eval (Any S.IsDigit ('Text "aamu"))
+-- Eval (Any S.IsDigit ('Text "aamu")) :: Bool
 -- = 'False
 data Any :: (Symbol -> Exp Bool) -> Text -> Exp Bool
-type instance Eval (Any f ('Text lst)) = Eval (F.Any f lst)
+type instance Eval (Any f ('Text sym)) = Eval (F.Any f (T.ToList sym))
 
 
 -- | All for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (All S.IsDigit ('Text '["a","a","m","u","1"]))
--- Eval (All S.IsDigit ('Text '["a","a","m","u","1"])) :: Bool
+--
+-- >>> :kind! Eval (All S.IsDigit ('Text "aamu1"))
+-- Eval (All S.IsDigit ('Text "aamu1")) :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (All S.IsDigit ('Text '["3","2","1"]))
--- Eval (All S.IsDigit ('Text '["3","2","1"])) :: Bool
+-- >>> :kind! Eval (All S.IsDigit ('Text "321"))
+-- Eval (All S.IsDigit ('Text "321")) :: Bool
 -- = 'True
 data All :: (Symbol -> Exp Bool) -> Text -> Exp Bool
-type instance Eval (All f ('Text lst)) = Eval (F.All f lst)
+type instance Eval (All f ('Text lst)) = Eval (F.All f (T.ToList lst))
 
 
 
@@ -464,100 +497,100 @@ type instance Eval (All f ('Text lst)) = Eval (F.All f lst)
 -- | Take for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Take 4 ('Text '["a", "a", "m", "u", "n"]))
--- Eval (Take 4 ('Text '["a", "a", "m", "u", "n"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (Take 4 ('Text "aamun"))
+-- Eval (Take 4 ('Text "aamun")) :: Text
+-- = 'Text "aamu"
 data Take :: Nat -> Text -> Exp Text
-type instance Eval (Take n ('Text lst)) = 'Text (Eval (F.Take n lst))
+type instance Eval (Take n ('Text lst)) = Eval (FromSymbolList =<< F.Take n (T.ToList lst))
 
 
 -- | TakeEnd for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (TakeEnd 4 ('Text '["h", "a", "a", "m", "u"]))
--- Eval (TakeEnd 4 ('Text '["h", "a", "a", "m", "u"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (TakeEnd 4 ('Text "haamu"))
+-- Eval (TakeEnd 4 ('Text "haamu")) :: Text
+-- = 'Text "aamu"
 data TakeEnd :: Nat -> Text -> Exp Text
 type instance Eval (TakeEnd n ('Text lst)) =
-    'Text (Eval (F.Reverse =<< F.Take n =<< F.Reverse lst))
+    Eval (FromSymbolList =<< F.Reverse =<< F.Take n =<< F.Reverse (T.ToList lst))
 
 
 -- | Drop for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Drop 2 ('Text '["a", "a", "m", "u", "n", "a"]))
--- Eval (Drop 2 ('Text '["a", "a", "m", "u", "n", "a"])) :: Text
--- = 'Text '["m", "u", "n", "a"]
+--
+-- >>> :kind! Eval (Drop 2 ('Text "aamuna"))
+-- Eval (Drop 2 ('Text "aamuna")) :: Text
+-- = 'Text "muna"
 data Drop :: Nat -> Text -> Exp Text
-type instance Eval (Drop n ('Text lst)) = 'Text (Eval (F.Drop n lst))
+type instance Eval (Drop n ('Text lst)) = Eval (FromSymbolList =<< F.Drop n (T.ToList lst))
 
 -- | DropEnd for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (DropEnd 2 ('Text '["a", "a", "m", "u", "n", "a"]))
--- Eval (DropEnd 2 ('Text '["a", "a", "m", "u", "n", "a"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (DropEnd 2 ('Text "aamuna"))
+-- Eval (DropEnd 2 ('Text "aamuna")) :: Text
+-- = 'Text "aamu"
 data DropEnd :: Nat -> Text -> Exp Text
 type instance Eval (DropEnd n ('Text lst)) =
-    'Text (Eval (F.Reverse =<< F.Drop n =<< F.Reverse lst))
+    Eval (FromSymbolList =<< F.Reverse =<< F.Drop n =<< F.Reverse (T.ToList lst))
 
 
 -- | TakeWhile for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (TakeWhile (Not <=< S.IsDigit) ('Text '["a","a","m","u","1","2"]))
--- Eval (TakeWhile (Not <=< S.IsDigit) ('Text '["a","a","m","u","1","2"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (TakeWhile (Not <=< S.IsDigit) ('Text "aamu12"))
+-- Eval (TakeWhile (Not <=< S.IsDigit) ('Text "aamu12")) :: Text
+-- = 'Text "aamu"
 data TakeWhile :: (Symbol -> Exp Bool) -> Text -> Exp Text
-type instance Eval (TakeWhile f ('Text lst)) = 'Text (Eval (F.TakeWhile f lst))
+type instance Eval (TakeWhile f ('Text lst)) = Eval (FromSymbolList =<< F.TakeWhile f (T.ToList lst))
 
 
 -- | TakeWhileEnd for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (TakeWhileEnd (Not <=< S.IsDigit) ('Text '["1","2","a","a","m","u"]))
--- Eval (TakeWhileEnd (Not <=< S.IsDigit) ('Text '["1","2","a","a","m","u"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (TakeWhileEnd (Not <=< S.IsDigit) ('Text "12aamu"))
+-- Eval (TakeWhileEnd (Not <=< S.IsDigit) ('Text "12aamu")) :: Text
+-- = 'Text "aamu"
 data TakeWhileEnd :: (Symbol -> Exp Bool) -> Text -> Exp Text
 type instance Eval (TakeWhileEnd f ('Text lst)) =
-    'Text (Eval (F.Reverse =<< F.TakeWhile f =<< F.Reverse lst))
+    Eval (FromSymbolList =<< F.Reverse =<< F.TakeWhile f =<< F.Reverse (T.ToList lst))
 
 
 -- | DropWhile for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (DropWhile S.IsDigit ('Text '["1","2","a","a","m","u"]))
--- Eval (DropWhile S.IsDigit ('Text '["1","2","a","a","m","u"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (DropWhile S.IsDigit ('Text "12aamu"))
+-- Eval (DropWhile S.IsDigit ('Text "12aamu")) :: Text
+-- = 'Text "aamu"
 data DropWhile :: (Symbol -> Exp Bool) -> Text -> Exp Text
-type instance Eval (DropWhile f ('Text lst)) = 'Text (Eval (F.DropWhile f lst))
+type instance Eval (DropWhile f ('Text lst)) = Eval (FromSymbolList =<< F.DropWhile f (T.ToList lst))
 
 
 -- | DropWhileEnd for type-level text.
 -- === __Example__
--- 
--- >>> :kind! Eval (DropWhileEnd S.IsDigit ('Text '["a","a","m","u","1","2"]))
--- Eval (DropWhileEnd S.IsDigit ('Text '["a","a","m","u","1","2"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (DropWhileEnd S.IsDigit ('Text "aamu12"))
+-- Eval (DropWhileEnd S.IsDigit ('Text "aamu12")) :: Text
+-- = 'Text "aamu"
 data DropWhileEnd :: (Symbol -> Exp Bool) -> Text -> Exp Text
 type instance Eval (DropWhileEnd f ('Text lst)) =
-    'Text (Eval (F.Reverse =<< F.DropWhile f =<< F.Reverse lst))
+    Eval (FromSymbolList =<< F.Reverse =<< F.DropWhile f =<< F.Reverse (T.ToList lst))
 
 
 -- | DropAround for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (DropAround S.IsDigit ('Text '["3","4","a","a","m","u","1","2"]))
--- Eval (DropAround S.IsDigit ('Text '["3","4","a","a","m","u","1","2"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (DropAround S.IsDigit ('Text "34aamu12"))
+-- Eval (DropAround S.IsDigit ('Text "34aamu12")) :: Text
+-- = 'Text "aamu"
 data DropAround :: (Symbol -> Exp Bool) -> Text -> Exp Text
 type instance Eval (DropAround f txt) = Eval (DropWhile f =<< DropWhileEnd f txt)
 
@@ -567,10 +600,10 @@ type instance Eval (DropAround f txt) = Eval (DropWhile f =<< DropWhileEnd f txt
 -- of type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Strip ('Text '[" ", " ", "a", "a", "m", "u", " ", "\n"]))
--- Eval (Strip ('Text '[" ", " ", "a", "a", "m", "u", " ", "\n"])) :: Text
--- = 'Text '["a", "a", "m", "u"]
+--
+-- >>> :kind! Eval (Strip ('Text "  aamu \n"))
+-- Eval (Strip ('Text "  aamu \n")) :: Text
+-- = 'Text "aamu"
 data Strip :: Text -> Exp Text
 type instance Eval (Strip txt) = Eval (DropAround S.IsSpaceDelim txt)
 
@@ -578,13 +611,13 @@ type instance Eval (Strip txt) = Eval (DropAround S.IsSpaceDelim txt)
 -- | SplitOn for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (SplitOn (Eval (FromList '["a", "b"])) (Eval (FromList '[ "c", "d", "a", "b", "f", "g", "a", "b", "h"])))
--- Eval (SplitOn (Eval (FromList '["a", "b"])) (Eval (FromList '[ "c", "d", "a", "b", "f", "g", "a", "b", "h"]))) :: [Text]
--- = '[ 'Text '["c", "d"], 'Text '["f", "g"], 'Text '["h"]]
+--
+-- >>> :kind! Eval (SplitOn ('Text "ab") ('Text "cdabfgabh"))
+-- Eval (SplitOn ('Text "ab") ('Text "cdabfgabh")) :: [Text]
+-- = '[ 'Text "cd", 'Text "fg", 'Text "h"]
 data SplitOn :: Text -> Text -> Exp [Text]
 type instance Eval (SplitOn ('Text sep) ('Text txt)) =
-    Eval (F.FMap FromList =<< SOLoop sep '( '[], txt))
+    Eval (F.FMap FromSymbolList =<< SOLoop (T.ToList sep) '( '[], T.ToList txt))
 
 
 -- | Helper for SplitOn
@@ -608,16 +641,17 @@ type instance Eval (SOLoop sep '(acc, (t ': txt))) =
     Eval (SOLoop sep =<< First (F.Snoc acc) =<< SOTake sep (t ': txt) '[])
 
 
+
 -- | Split for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Split S.IsSpace (Eval (FromList '[ "c", "d", " ", "b", "f", " ", "a", "b", "h"])))
--- Eval (Split S.IsSpace (Eval (FromList '[ "c", "d", " ", "b", "f", " ", "a", "b", "h"]))) :: [Text]
--- = '[ 'Text '["c", "d"], 'Text '["b", "f"], 'Text '["a", "b", "h"]]
+--
+-- >>> :kind! Eval (Split S.IsSpace (Eval (Singleton "cd bf abh")))
+-- Eval (Split S.IsSpace (Eval (Singleton "cd bf abh"))) :: [Text]
+-- = '[ 'Text "cd", 'Text "bf", 'Text "abh"]
 data Split :: (Symbol -> Exp Bool) -> Text -> Exp [Text]
 type instance Eval (Split p ('Text txt)) =
-    Eval (F.FMap FromList =<< SplitLoop p '( '[], txt))
+    Eval (F.FMap FromSymbolList =<< SplitLoop p '( '[], T.ToList txt))
 
 -- | Helper for Split
 data SplitTake :: (Symbol -> Exp Bool) -> [Symbol] -> [Symbol] -> Exp ([Symbol], [Symbol])
@@ -631,28 +665,28 @@ type instance Eval (SplitTake p (t ': txt) accum) = Eval
 -- | Helper for Split
 data SplitLoop :: (Symbol -> Exp Bool) -> ([[Symbol]],[Symbol]) -> Exp [[Symbol]]
 type instance Eval (SplitLoop p '(acc, '[])) = acc
-type instance Eval (SplitLoop p '(acc, (t ': txt))) =
+type instance Eval (SplitLoop p '(acc, (t ': txt))) = 
     Eval (SplitLoop p =<< First (F.Snoc acc) =<< SplitTake p (t ': txt) '[])
 
 
 
--- | Lines for type-level text.
+-- | Lines for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Lines =<< FromList '[ "o", "k", "\n", "h", "m", "m ", "\n", "a", "b"])
--- Eval (Lines =<< FromList '[ "o", "k", "\n", "h", "m", "m ", "\n", "a", "b"]) :: [Text]
--- = '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]]
+--
+-- >>> :kind! Eval (Lines =<< Singleton "ok\nhmm\nab")
+-- Eval (Lines =<< Singleton "ok\nhmm\nab") :: [Text]
+-- = '[ 'Text "ok", 'Text "hmm", 'Text "ab"]
 data Lines :: Text -> Exp [Text]
 type instance Eval (Lines txt) = Eval (Split S.IsNewLine txt)
 
 -- | Words for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Words =<< FromList '[ "o", "k", " ", "h", "m", "m ", "\n", "a", "b"])
--- Eval (Words =<< FromList '[ "o", "k", " ", "h", "m", "m ", "\n", "a", "b"]) :: [Text]
--- = '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]]
+--
+-- >>> :kind! Eval (Words =<< Singleton "ok hmm\nab")
+-- Eval (Words =<< Singleton "ok hmm\nab") :: [Text]
+-- = '[ 'Text "ok", 'Text "hmm", 'Text "ab"]
 data Words :: Text -> Exp [Text]
 type instance Eval (Words txt) = Eval (Split S.IsSpaceDelim txt)
 
@@ -660,55 +694,57 @@ type instance Eval (Words txt) = Eval (Split S.IsSpaceDelim txt)
 -- concats them.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Unlines '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]])
--- Eval (Unlines '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]]) :: Text
--- = 'Text '["o", "k", "\n", "h", "m", "m ", "\n", "a", "b", "\n"]
+--
+-- >>> :kind! Eval (Unlines '[ 'Text "ok", 'Text "hmm", 'Text "ab"])
+-- Eval (Unlines '[ 'Text "ok", 'Text "hmm", 'Text "ab"]) :: Text
+-- = 'Text "ok\nhmm\nab\n"
 data Unlines :: [Text] -> Exp Text
-type instance Eval (Unlines txts) =
+type instance Eval (Unlines txts) = 
     Eval (Concat =<< F.FMap (Flip Append (Singleton @@ "\n")) txts)
 
 -- | Unwords for type-level text. This uses 'Intercalate' to add space-symbol
 -- between the given texts.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (Unwords '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]])
--- Eval (Unwords '[ 'Text '["o", "k"], 'Text '["h", "m", "m "], 'Text '["a", "b"]]) :: Text
--- = 'Text '["o", "k", " ", "h", "m", "m ", " ", "a", "b"]
+--
+-- >>> :kind! Eval (Unwords '[ 'Text "ok", 'Text "hmm", 'Text "ab"])
+-- Eval (Unwords '[ 'Text "ok", 'Text "hmm", 'Text "ab"]) :: Text
+-- = 'Text "ok hmm ab"
 data Unwords :: [Text] -> Exp Text
-type instance Eval (Unwords txts) = Eval (Intercalate ('Text '[" "]) txts)
+type instance Eval (Unwords txts) = Eval (Intercalate ('Text " ") txts)
 
 
 -- | IsPrefixOf for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (IsPrefixOf ('Text '["a", "a"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"]))
--- Eval (IsPrefixOf ('Text '["a", "a"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"])) :: Bool
+--
+-- >>> :kind! Eval (IsPrefixOf ('Text "aa") ('Text "aamiainen"))
+-- Eval (IsPrefixOf ('Text "aa") ('Text "aamiainen")) :: Bool
 -- = 'True
 data IsPrefixOf :: Text -> Text -> Exp Bool
-type instance Eval (IsPrefixOf ('Text l1) ('Text l2) ) = Eval (F.IsPrefixOf l1 l2)
+type instance Eval (IsPrefixOf ('Text l1) ('Text l2) ) =
+    Eval (F.IsPrefixOf (T.ToList l1) (T.ToList l2))
 
 
 -- | IsSuffixOf for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (IsSuffixOf ('Text '["n", "e", "n"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"]))
--- Eval (IsSuffixOf ('Text '["n", "e", "n"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"])) :: Bool
+--
+-- >>> :kind! Eval (IsSuffixOf ('Text "nen") ('Text "aamiainen"))
+-- Eval (IsSuffixOf ('Text "nen") ('Text "aamiainen")) :: Bool
 -- = 'True
 data IsSuffixOf :: Text -> Text -> Exp Bool
-type instance Eval (IsSuffixOf ('Text l1) ('Text l2) ) = Eval (F.IsSuffixOf l1 l2)
+type instance Eval (IsSuffixOf ('Text l1) ('Text l2) ) =
+    Eval (F.IsSuffixOf (T.ToList l1) (T.ToList l2))
 
 
 -- | IsInfixOf for type-level text.
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (IsInfixOf ('Text '["m", "i", "a"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"]))
--- Eval (IsInfixOf ('Text '["m", "i", "a"]) ('Text '["a", "a", "m", "i", "a", "i", "n", "e", "n"])) :: Bool
+--
+-- >>> :kind! Eval (IsInfixOf ('Text "mia") ('Text "aamiainen"))
+-- Eval (IsInfixOf ('Text "mia") ('Text "aamiainen")) :: Bool
 -- = 'True
 data IsInfixOf :: Text -> Text -> Exp Bool
-type instance Eval (IsInfixOf ('Text l1) ('Text l2) ) = Eval (F.IsInfixOf l1 l2) 
-
+type instance Eval (IsInfixOf ('Text l1) ('Text l2) ) =
+    Eval (F.IsInfixOf (T.ToList l1) (T.ToList l2))
