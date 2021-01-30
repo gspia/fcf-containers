@@ -20,7 +20,7 @@ Maintainer  : gspia
 
 This is from https://kcsongor.github.io/symbol-parsing-haskell/
 
-Ks. symbols library
+Please do also check the symbols library at Hackage.
 
 -}
 
@@ -29,7 +29,6 @@ Ks. symbols library
 module Fcf.Data.Text.Internal where
 
 import Data.Char (chr)
--- import Data.Proxy
 
 import qualified GHC.TypeLits as TL
 import qualified Fcf.Data.List as L
@@ -51,7 +50,7 @@ type family Head2 (sym :: TL.Symbol) :: TL.Symbol where
 type family ToList (sym :: TL.Symbol) :: [TL.Symbol] where
     ToList sym = ToList1 sym ""
 
--- Helper. 
+-- Helper.
 data ToSymbol2 :: [TL.Symbol] -> Exp TL.Symbol
 type instance Eval (ToSymbol2 lst) = Eval (Foldr S.Append "" lst)
 
