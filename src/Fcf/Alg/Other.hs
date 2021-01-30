@@ -32,6 +32,7 @@ import           Fcf as Fcf
 -- For the doctests:
 
 -- $setup
+-- >>> import           GHC.Types
 
 --------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ import           Fcf as Fcf
 --
 -- >>> :kind! Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1))
 -- Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1)) :: Maybe
---                                                           (GHC.Types.Symbol, GHC.Types.Nat)
+--                                                           (Symbol, Nat)
 -- = 'Just '("txt", 1)
 data PairMaybeToMaybePair :: (Maybe a, Maybe b) -> Exp (Maybe (a,b))
 type instance Eval (PairMaybeToMaybePair '( 'Nothing, _)) = 'Nothing
@@ -53,8 +54,9 @@ type instance Eval (PairMaybeToMaybePair '( 'Just a, 'Just b)) = 'Just '(a,b)
 --
 -- === __Evample__
 --
--- :kind! Eval (Id "id")
+-- >>> :kind! Eval (Id "id")
+-- Eval (Id "id") :: Symbol
+-- = "id"
 data Id :: a -> Exp a
 type instance Eval (Id a) = a
--- no doc test for this as the output is different between stackage vs
--- ubuntu tests
+

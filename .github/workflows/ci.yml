@@ -29,6 +29,8 @@ jobs:
           - os: windows-latest
             ghc: 8.10
           - os: windows-latest
+            ghc: 8.8
+          - os: windows-latest
             ghc: 8.6
           - os: windows-latest
             ghc: 8.4
