@@ -53,9 +53,8 @@ type instance Eval (PairMaybeToMaybePair '( 'Just a, 'Just b)) = 'Just '(a,b)
 --
 -- === __Evample__
 --
--- >>> :kind! Eval (Id "id")
--- Eval (Id "id") :: GHC.Types.Symbol
--- = "id"
+-- :kind! Eval (Id "id")
 data Id :: a -> Exp a
 type instance Eval (Id a) = a
-
+-- no doc test for this as the output is different between stackage vs
+-- ubuntu tests
