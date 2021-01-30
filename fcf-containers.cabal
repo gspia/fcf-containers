@@ -37,6 +37,7 @@ library
                    , Fcf.Alg.Tree
   build-depends:     base >= 4.9 && < 4.18
                    , first-class-families >= 0.8 && < 0.9
+                   , ghc-prim
   ghc-options:      -Wall
   default-language:  Haskell2010
   -- ghc-options:
@@ -93,9 +94,10 @@ test-suite fcf-doctest
   if impl(ghc >= 8.6)
     build-depends:
       base
+      , doctest
       , first-class-families
       , fcf-containers
-      , doctest
+      , ghc-prim
       , Glob
   else
     buildable: False
