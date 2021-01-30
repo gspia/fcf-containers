@@ -1,4 +1,12 @@
+# 0.6.1
+
+20210130
+
+Start using the github actions and remove travis CI.
+
 # 0.6.0
+
+20210130
 
  - use symbol as text representation (we can split predefined char-sets, as shown
    by the Csongor at https://kcsongor.github.io/symbol-parsing-haskell/ see also
