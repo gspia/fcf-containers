@@ -65,7 +65,7 @@ import           Fcf.Data.List (Take, type (++), Elem, Length, Foldr, ZipWith, R
 --------------------------------------------------------------------------------
 
 -- | Example input for which the answer is 291.
-type ExampleInput = '( '[9, 2, 6, 3, 1], '[5, 8, 4, 7, 10]) :: ([Nat],[Nat])
+type ExampleInput = '( '[9, 2, 6, 3, 1], '[5, 8, 4, 7, 10]) -- :: ([Nat],[Nat])
 
 data Player = P1 | P2
 
