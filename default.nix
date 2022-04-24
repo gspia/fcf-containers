@@ -1,5 +1,8 @@
 { 
-  # compiler ? "ghc881" 
+  # compiler ? "ghc884" 
+  # compiler ? "ghc8107"
+  # compiler ? "ghc902"
+  # compiler ? "ghc922"
 } :
 let
   config = {
@@ -16,11 +19,11 @@ let
           # });
           first-class-families = self.callCabal2nix "first-class-families" 
           #   ~/gito/first-class-families {}; 
-            (pkgs.fetchFromGitHub { # 0.8
+            (pkgs.fetchFromGitHub { # 0.8.0.1
               owner  = "Lysxia";
               repo   = "first-class-families";
-              rev    = "4a0bf3ea9c125bb4009b61ce70b1a5339b7b2072";
-              sha256 = "14387mpfvds226iynkpay3aaqamvxznxjsmg2qcwdxafdvxmyq9z";
+              rev    = "d4780864ed9b11343b7b26050e39b2048a8e61f6";
+              sha256 = "1iw0dryz66z4k9lsj1kayf17xs38i8bdk9aqi2qz49vcbhnfw8pd";
             }) {};
             # something for the next version?
             #  rev    = "9fe4ce36cf1cd4b0f5af59c923c15b9085c48cd6";
@@ -47,7 +50,8 @@ let
   adjust-for-ghc = drv: {
     executableSystemDepends = [
       hpkgs.ghcid
-      hpkgs.ghcide
+      # hpkgs.ghcide
+      hpkgs.haskell-language-server
       hpkgs.cabal-install
     ];
     buildDepends = [
