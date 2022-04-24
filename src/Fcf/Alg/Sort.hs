@@ -105,7 +105,7 @@ type instance Eval (Inord ('BNodeF v l r)) = Eval (l ++ (Eval ('[v] ++ r)))
 
 -- | Qsort - give the comparison function @a -> a -> Exp Bool@ comparing your 
 -- list elements and then Qsort will order the list.
--- 
+--
 -- __Example__
 --
 -- >>> :kind! Eval (Qsort (N.<) '[5,3,1,9,4,6,3])
@@ -120,7 +120,7 @@ type instance Eval (Qsort cmp lst) = Eval (Hylo Inord (PartCmp cmp) lst)
 
 -- Helper
 --
--- We use the Flip version so that using <-comparison will give an inreasing 
+-- We use the Flip version so that using <-comparison will give an inreasing
 -- Nat-list. Sorting would work without PartCmp.
 data PartCmp :: (a -> a -> Exp Bool) -> CoAlgebra (BTreeF a) [a] 
 type instance Eval (PartCmp cmp coalg) = Eval (PartHlp (Flip cmp) coalg)

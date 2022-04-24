@@ -57,7 +57,7 @@ type instance Eval (FMap f ('ConsF a b)) = 'ConsF a (Eval (f b))
 
 --------------------------------------------------------------------------------
 
--- | ListToFix can be used to turn a norma type-level list into the base
+-- | ListToFix can be used to turn a normal type-level list into the base
 -- functor type ListF, to be used with e.g. Cata. For examples in use, see
 -- 'LenAlg' and 'SumAlg'.
 --
@@ -172,7 +172,7 @@ data EvensAlg :: ListF a (Ann (ListF a) [a]) -> Exp [a]
 type instance Eval (EvensAlg 'NilF) = '[]
 type instance Eval (EvensAlg ('ConsF _ rst )) = Eval (EvensStrip =<< Strip rst)
 
--- | This picks up the elements on even positions on a list and is an 
+-- | This picks up the elements on even positions on a list and is an
 -- example on how to use Histo. This example is
 -- from Tim Williams, Recursion Schemes by example.
 --

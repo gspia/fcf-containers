@@ -38,7 +38,7 @@ import           Fcf as Fcf
 
 -- | Helper.
 --
--- === __Evample__
+-- === __Example__
 --
 -- >>> :kind! Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1))
 -- Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1)) :: Maybe
@@ -52,7 +52,7 @@ type instance Eval (PairMaybeToMaybePair '( 'Just a, 'Just b)) = 'Just '(a,b)
 
 -- | Id function.
 --
--- === __Evample__
+-- === __Example__
 --
 -- >>> :kind! Eval (Id "id")
 -- Eval (Id "id") :: Symbol

@@ -92,9 +92,9 @@ data Set a = Set [a]
 --------------------------------------------------------------------------------
 
 -- | Empty
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! (Eval Empty :: Set Nat)
 -- (Eval Empty :: Set Nat) :: Set Nat
 -- = 'Set '[]
@@ -104,9 +104,9 @@ data Empty :: Exp (Set v)
 type instance Eval Empty = 'Set '[]
 
 -- | Singleton
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Singleton 1)
 -- Eval (Singleton 1) :: Set Nat
 -- = 'Set '[1]
@@ -132,9 +132,9 @@ type instance Eval (Insert v ('Set lst)) =
         ('Set (v ': lst))
 
 -- | Delete
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Delete 5 =<< FromList '[5, 3])
 -- Eval (Delete 5 =<< FromList '[5, 3]) :: Set Nat
 -- = 'Set '[3]
@@ -149,7 +149,7 @@ type instance Eval (Delete v ('Set lst)) =
 -- | Member
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Member 5 =<< FromList '[5, 3])
 -- Eval (Member 5 =<< FromList '[5, 3]) :: Bool
 -- = 'True
@@ -162,7 +162,7 @@ type instance Eval (Member v ('Set lst)) = Eval (Elem v lst)
 -- | NotMember
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (NotMember 5 =<< FromList '[5, 3])
 -- Eval (NotMember 5 =<< FromList '[5, 3]) :: Bool
 -- = 'False
@@ -177,7 +177,7 @@ type instance Eval (NotMember k ('Set lst)) =
 -- | Null
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Null =<< FromList '[5, 3])
 -- Eval (Null =<< FromList '[5, 3]) :: Bool
 -- = 'False
@@ -192,7 +192,7 @@ type instance Eval (Null ('Set (_ ': _))) = 'False
 -- | Size
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Size =<< FromList '[5, 3])
 -- Eval (Size =<< FromList '[5, 3]) :: Nat
 -- = 2
@@ -200,10 +200,10 @@ data Size :: Set v -> Exp TL.Nat
 type instance Eval (Size ('Set lst)) = Eval (Length lst)
 
 
--- | IsSubsetOf 
+-- | IsSubsetOf
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4]))
 -- Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'True
@@ -224,10 +224,10 @@ type instance Eval (IsSubsetOf ('Set s1) ('Set s2)) =
     Eval (All (Flip Elem s2) s1)
 
 
--- | IsProperSubsetOf 
+-- | IsProperSubsetOf
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4]))
 -- Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'False
@@ -245,7 +245,7 @@ type instance Eval (IsProperSubsetOf ('Set s1) ('Set s2)) = Eval
 -- | Type-level set union.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) )
 -- Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) ) :: Set 
 --                                                                        Nat
@@ -262,9 +262,9 @@ type instance Eval (UComb v lst) =
 
 
 -- | Type-level set difference.
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
 -- Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7]))) :: Set 
 --                                                                            Nat
@@ -330,7 +330,7 @@ data SelectWithBools :: [a] -> [Bool] -> Exp [a]
 type instance Eval (SelectWithBools elms bls) =
     Eval (Concat =<< ZipWith SelWithBool elms bls)
 
--- | Calculate the power sets of a given type-level list. The algorithm is based 
+-- | Calculate the power sets of a given type-level list. The algorithm is based
 -- on Gray codes.
 --
 -- === __Example__
@@ -360,7 +360,7 @@ type instance Eval (PowerSet ('Set lst)) =
 -- | Use FromList to construct a Set from type-level list.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (FromList '[1, 2])
 -- Eval (FromList '[1, 2]) :: Set Nat
 -- = 'Set '[1, 2]
@@ -370,7 +370,7 @@ type instance Eval (FromList lst) = 'Set lst
 -- | Get the type-level list out of the 'Set'.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (ToList =<< PowerSet =<< FromList '[1,2,3])
 -- Eval (ToList =<< PowerSet =<< FromList '[1,2,3]) :: [Set Nat]
 -- = '[ 'Set '[], 'Set '[3], 'Set '[2], 'Set '[2, 3], 'Set '[1],
