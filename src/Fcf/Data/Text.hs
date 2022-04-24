@@ -30,8 +30,10 @@ module Fcf.Data.Text
     , Empty
     , Singleton
     , FromList
+    , FromSymbolList
     , ToList
     , ToSymbol
+    , ToSymbolList
 
     -- * Basic Interface
     , Null
@@ -96,7 +98,6 @@ import qualified Fcf.Data.List as F
     ( Length, Init, Reverse, Take, Drop, TakeWhile, DropWhile
     , Intercalate, Intersperse, IsPrefixOf, IsSuffixOf, IsInfixOf, Snoc)
 import           Fcf.Data.Symbol (Symbol)
--- import qualified Fcf.Data.Symbol as FS
 
 import qualified Fcf.Class.Functor as F ( FMap )
 
