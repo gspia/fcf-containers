@@ -1,3 +1,15 @@
+
+
+# 0.7.0
+
+20220424
+
+ - Add preliminary support for Applicative and Monadic computations
+ - Small whitespace fixes
+ - Added dependency for mtl (to get Identity)
+ - Add new compiler versions for tests and drop some old
+ - Start referring to cabal version 3.0
+
 # 0.6.1
 
 20210130
