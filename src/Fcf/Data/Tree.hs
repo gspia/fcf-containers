@@ -37,6 +37,8 @@ module Fcf.Data.Tree where
 import           Fcf as Fcf
 import           Fcf.Data.List as Fcf
 
+import           Fcf.Control.Monad as M
+
 --------------------------------------------------------------------------------
 
 -- For the doctests:
@@ -54,6 +56,50 @@ data Tree a = Node a [Tree a]
 -- | Same as in containers, except not used for any term-level computation
 -- in this module.
 type Forest a = [Tree a]
+
+
+type ExT1r =
+    'Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]]
+
+type ExTr2 =
+    'Node ('Just 1)
+        '[ 'Node ('Just 2)
+            '[ 'Node ('Just 3)
+                '[ 'Node ('Just 4) '[]]
+             ]
+         , 'Node ('Just 5)
+            '[ 'Node ('Just 6) '[]
+             ]
+         ]
+
+
+-- map for trees
+type instance Eval (Map f ('Node a tr)) = 'Node (f @@ a) (Eval (Map (Map f) tr))
+
+-- pure/return for trees
+type instance Eval (M.Return a) = 'Node a '[]
+
+-- M.<*> instance (applicative)
+type instance Eval (('Node f tfs) M.<*> ('Node x txs)) =
+    'Node (Eval (f x))
+        (Eval ( (Eval (Map (Map f) txs))
+        ++
+          (Eval (Map (StarTx ('Node x txs)) tfs))
+          -- (Eval (Map ( M.<*> ('Node x txs)) tfs))
+        ))
+
+-- Helper for M.<*>
+data StarTx :: Tree a -> Tree (a -> Exp b) -> Exp (Tree b)
+type instance Eval (StarTx fa fab) = Eval (fab M.<*> fa)
+
+
+-- :kind! Eval (Sequence ExTr2)
+type instance Eval (Traverse f ('Node x ts)) =
+    Eval (LiftA2 (Pure2 'Node) (Eval (f x)) (Eval (Traverse (Traverse f) ts)))
+
+
+--------------------------------------------------------------------------------
+
 
 -- | Fold a type-level 'Tree'.
 data FoldTree :: (a -> [b] -> Exp b) -> Tree a -> Exp b
