@@ -7,7 +7,7 @@ Description:
     contents of containers-package and show how these can be used. Everything is
     based on the ideas given in the first-class-families -package.
 Homepage:            https://github.com/gspia/fcf-containers
-Version:             0.7.0
+Version:             0.7.1
 Build-type:          Simple
 Author:              gspia
 Maintainer:          iahogsp@gmail.com
@@ -16,7 +16,7 @@ License-file:        LICENSE
 Category:            Other
 Copyright:           gspia (c) 2020-
 Extra-source-files:  README.md, TODO.md, CHANGELOG.md, default.nix, shell.nix
-Tested-With:         GHC ==9.2.2 || ==9.0.2 || ==8.10.7 || ==8.8.4
+Tested-With:         GHC ==9.2.2 || ==9.0.2 || ==8.10.7
 
 
 library
@@ -100,7 +100,6 @@ test-suite fcf-doctest
       , first-class-families
       , fcf-containers
       , ghc-prim
-      , Glob
   else
     buildable: False
 
