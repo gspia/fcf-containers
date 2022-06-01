@@ -80,11 +80,11 @@ type instance Eval (Map f ('Node a tr)) = 'Node (f @@ a) (Eval (Map (Map f) tr))
 type instance Eval (M.Return a) = 'Node a '[]
 
 -- M.<*> instance (applicative)
-type instance Eval (('Node f tfs) M.<*> ('Node x txs)) =
+type instance Eval ('Node f tfs M.<*> 'Node x txs) =
     'Node (Eval (f x))
-        (Eval ( (Eval (Map (Map f) txs))
+        (Eval ( Eval (Map (Map f) txs)
         ++
-          (Eval (Map (StarTx ('Node x txs)) tfs))
+          Eval (Map (StarTx ('Node x txs)) tfs)
           -- (Eval (Map ( M.<*> ('Node x txs)) tfs))
         ))
 
@@ -177,5 +177,4 @@ type instance Eval (SubFLevels (t ': ts)) =
 -- = '[ '[1], '[2, 5], '[3, 6], '[4]]
 data Levels :: Tree a -> Exp [[a]]
 type instance Eval (Levels tr) = Eval (Unfoldr SubFLevels '[tr])
-
 
