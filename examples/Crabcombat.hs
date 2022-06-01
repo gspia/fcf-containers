@@ -101,7 +101,7 @@ type instance Eval (Day22 input) = Eval
     (
     Foldr (N.+) 0
     =<< Uncurry (ZipWith (N.*))
-    =<< Bimap ((MToN 1) <=< Length) Reverse
+    =<< Bimap (MToN 1 <=< Length) Reverse
     =<< AsPair
     =<< Fst
     =<< PlayGame '[] input
@@ -114,6 +114,7 @@ type instance Eval (Day22 input) = Eval
 -- Does not compile on my machine (not even with the -freduction-depth=0 at cabal),
 -- not enough memory
 -- Ghci also gets 'Killed'.
+{-
 type Input =
     '( '[21, 50,  9, 45, 16, 47, 27, 38, 29, 48, 10, 42, 32, 31, 41, 11,  8, 33, 25, 30, 12, 40,  7, 23, 46]
      , '[22, 20, 44,  2, 26, 17, 34, 37, 43,  5, 15, 18, 36, 19, 24, 35,  3, 13, 14,  1,  6, 39, 49,  4, 28]
@@ -136,7 +137,7 @@ type Input4 =
     '( '[21, 50,  9, 45, 16, 47, 27, 38, 29, 48, 10,   40,  7, 23, 46]
      , '[22, 20, 44,  2, 26, 17, 34, 37, 43,  5, 15,   39, 49,  4, 28]
      ) -- :: ([Nat], [Nat])
-
+-}
 
 
 
