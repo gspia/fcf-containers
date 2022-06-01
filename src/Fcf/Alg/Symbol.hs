@@ -163,7 +163,7 @@ type instance Eval (IsTab s) = Eval (s == "\t")
 -- = 'True
 data IsSpaceDelim :: Symbol -> Exp Bool
 type instance Eval (IsSpaceDelim s) =
-    Eval (Eval (IsSpace s) || (Eval (Eval (IsNewLine s) || Eval (IsTab s))))
+    Eval (Eval (IsSpace s) || Eval (Eval (IsNewLine s) || Eval (IsTab s)))
 
 
 -- | IsDigit
