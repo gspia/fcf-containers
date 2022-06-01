@@ -1,8 +1,5 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
-{-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS_GHC -Wall                       #-}
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
@@ -25,7 +22,7 @@ To be moved to some other place
 
 module Fcf.Alg.Other where
 
-import           Fcf as Fcf
+import           Fcf
 
 --------------------------------------------------------------------------------
 
