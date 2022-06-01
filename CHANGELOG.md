@@ -5,6 +5,7 @@
 
  - Clean up several modules (remove extra spaces and paranthesis)
  - Update doctest function and remove Glob dependency
+ - Update ci pipeline to do tests with 9.0 and 9.2
 
 # 0.7.0
 
