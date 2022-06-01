@@ -307,10 +307,10 @@ type instance Eval (AddTrues lst) = Eval (Map (Cons 'True) lst)
 -- helper for PowerSet
 data ExtendBitList :: [[Bool]] -> Exp [[Bool]]
 type instance Eval (ExtendBitList lst) =
-    Eval ((Eval (AddFalses lst)) ++ (Eval (AddTrues =<< Map Reverse lst)))
+    Eval (Eval (AddFalses lst) ++ Eval (AddTrues =<< Map Reverse lst))
 
 -- helper for PowerSet
--- :kind! Eval (Cata BuildGrayBitListsAlg=<< ListToFix =<< Replicate 3 '[])
+-- :kind! Eval (Cata BuildGrayBitListsAlg =<< ListToFix =<< Replicate 3 '[])
 data BuildGrayBitListsAlg :: Algebra (ListF [[Bool]]) [[Bool]]
 type instance Eval (BuildGrayBitListsAlg 'NilF) = '[ '[] ]
 type instance Eval (BuildGrayBitListsAlg ('ConsF _ lst)) = Eval (ExtendBitList lst)
@@ -381,5 +381,4 @@ type instance Eval (FromList lst) = 'Set lst
 -- = '[ '[], '[1], '[1, 2], '[1, 2, 3], '[1, 3], '[2], '[2, 3], '[3]]
 data ToList :: Set v -> Exp [v]
 type instance Eval (ToList ('Set lst)) = lst
-
 
