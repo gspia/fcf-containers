@@ -1,4 +1,10 @@
 
+# 0.7.1
+
+20220601
+
+ - Clean up several modules (remove extra spaces and paranthesis)
+ - Update doctest function and remove Glob dependency
 
 # 0.7.0
 
