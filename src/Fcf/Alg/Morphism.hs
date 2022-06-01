@@ -64,7 +64,7 @@ type RAlgebra f a = f (Fix f, a) -> Exp a
 -- Check Fcf.Alg.List to see example algebras in use. There we have e.g.
 -- ListToFix-function.
 data Cata :: Algebra f a -> Fix f -> Exp a
-type instance Eval (Cata alg ('Fix b)) = alg @@ (Eval (Map (Cata alg) b))
+type instance Eval (Cata alg ('Fix b)) = alg @@ Eval (Map (Cata alg) b)
 
 -- | Ana can also be used to build a 'Fix' structure.
 --
@@ -117,7 +117,7 @@ type instance Eval (Fanout ralg ('Fix f)) = '( 'Fix f, Eval (Para ralg ('Fix f))
 -- Check Fcf.Alg.List to see example algebras in use. There we have e.g.
 -- ListToParaFix-function.
 data Para :: RAlgebra f a -> Fix f -> Exp a
-type instance Eval (Para ralg ('Fix  a)) =  ralg @@ (Eval (Map (Fanout ralg) a))
+type instance Eval (Para ralg ('Fix  a)) =  ralg @@ Eval (Map (Fanout ralg) a)
 
 --------------------------------------------------------------------------------
 
