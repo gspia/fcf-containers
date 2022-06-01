@@ -100,7 +100,7 @@ type instance Eval (PartHlp smaller (h ': t)) =
 -- helper
 data Inord :: Algebra (BTreeF a) [a]
 type instance Eval (Inord 'BEmptyF) = '[]
-type instance Eval (Inord ('BNodeF v l r)) = Eval (l ++ (Eval ('[v] ++ r)))
+type instance Eval (Inord ('BNodeF v l r)) = Eval (l ++ Eval ('[v] ++ r))
 
 
 -- | Qsort - give the comparison function @a -> a -> Exp Bool@ comparing your 
@@ -124,5 +124,4 @@ type instance Eval (Qsort cmp lst) = Eval (Hylo Inord (PartCmp cmp) lst)
 -- Nat-list. Sorting would work without PartCmp.
 data PartCmp :: (a -> a -> Exp Bool) -> CoAlgebra (BTreeF a) [a] 
 type instance Eval (PartCmp cmp coalg) = Eval (PartHlp (Flip cmp) coalg)
-
 
