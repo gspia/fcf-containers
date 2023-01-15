@@ -81,9 +81,9 @@ cabal run haiku
 
 Please, do take a look of the notes made for the Helsinki Haskell meetup
 on 11th January 2023
-[nodes](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhslides.md)
-and the associated code examples
-[nodes](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhmeetup.hs).
+[notes](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhslides.md)
+and the associated 
+[code examples](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhmeetup.hs).
 
 
 
