@@ -79,6 +79,13 @@ There is also another example that show how to use MapC, see
 cabal run haiku 
 ```
 
+Please, do take a look of the notes made for the Helsinki Haskell meetup
+on 11th January 2023
+[nodes](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhslides.md)
+and the associated code examples
+[nodes](https://github.com/gspia/fcf-containers/blob/master/examples/20230111_hhmeetup.hs).
+
+
 
 ## Random Notes
 
@@ -91,7 +98,7 @@ as possible with the `Eval` function.
 We don't have lambdas, but if you can write the helper function in point-free
 form, it might can be used directly without any global function definition.
 Remember, that `(<=<)` corresponds to term-level `(.)` and `(=<<)` to 
-term-level function  application `($)`. See also Maguire's book 
+term-level function application `($)`. See also Maguire's book 
 (Thinking with Types).
 
 

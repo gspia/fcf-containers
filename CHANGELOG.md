@@ -1,4 +1,11 @@
 
+# 0.7.2
+
+2023015
+
+- Add notes about defunctionalization and associated code examples
+- Add helper module for Foldl method (it would be better at first-class-families lib).
+
 # 0.7.1
 
 20220601
