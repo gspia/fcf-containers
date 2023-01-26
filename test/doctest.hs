@@ -10,4 +10,4 @@ exts =
   ]
 
 main :: IO ()
-main = doctest $ exts ++ ["-isrc"]
+main = doctest $ exts ++ ["src"]

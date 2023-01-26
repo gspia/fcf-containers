@@ -343,7 +343,8 @@ type instance Eval (SelectWithBools elms bls) =
 --        'Set '["a", "b", "c"]]
 --
 -- >>> :kind! Eval (PowerSet =<< FromList '[Int, Char, Maybe Int])
--- Eval (PowerSet =<< FromList '[Int, Char, Maybe Int]) :: Set (Set *)
+-- Eval (PowerSet =<< FromList '[Int, Char, Maybe Int]) :: Set
+--                                                           (Set (*))
 -- = 'Set
 --     '[ 'Set '[], 'Set '[Maybe Int], 'Set '[Char],
 --        'Set '[Char, Maybe Int], 'Set '[Int], 'Set '[Int, Char],

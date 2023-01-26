@@ -290,6 +290,30 @@ type instance Eval (ForM ta f) = Eval (MapM f ta)
 
 
 --------------------------------------------------------------------------------
+-- FoldlM
+
+-- | FoldlM
+--
+-- === __Example__
+--
+-- >>> import GHC.TypeLits as TL (Symbol, type (-))
+-- >>> data Lambda :: Nat -> Nat -> Exp (Either Symbol Nat)
+-- >>> type instance Eval (Lambda a b) = If (Eval (a >= b)) ('Right (a TL.- b)) ('Left "Nat cannot be negative")
+-- >>> :kind! Eval (FoldlM Lambda 5 '[1,1,1])
+-- Eval (FoldlM Lambda 5 '[1,1,1]) :: Either Symbol Nat
+-- = 'Right 2
+-- >>> :kind! Eval (FoldlM Lambda 5 '[1,4,1])
+-- Eval (FoldlM Lambda 5 '[1,4,1]) :: Either Symbol Nat
+-- = 'Left "Nat cannot be negative"
+--
+data FoldlM :: (b -> a -> Exp (m b)) -> b -> t a -> Exp (m b)
+type instance Eval (FoldlM f z0 xs) = Eval ((Eval (Foldr (FoldlMHelper f) Return xs)) z0)
+
+-- | Helper for 'FoldlM'
+data FoldlMHelper :: (b -> a -> Exp (m b)) -> a -> (b -> Exp (m b)) -> Exp (b -> Exp (m b))
+type instance Eval (FoldlMHelper f a b) = Flip (>>=) b <=< Flip f a
+
+--------------------------------------------------------------------------------
 -- Traversable
 
 
