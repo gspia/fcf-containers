@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -16,9 +17,14 @@ to get the results into use on term-level (ie runtime).
 
 This exemplifies the use of @MapC@ and @Text@.
 
+Idea of the type-level program.  We want to check that the given type-level
+Haiku is correctly composed.  As inputs, we get the Haiku as words written
+in syllables.  The allowed Haiku-structure, that is, the number of expected
+syllables per line, is given separetely.  We require 5, 7 and 5 syllables.
+
 Exercises:
  - Write a method for structurally wrong Haiku's and output something other in those cases
- - Vocabulary with syllables is somewhat parameterized (except WSmap) but 
+ - Vocabulary with syllables is somewhat parameterized (except WSmap) but
    not the other half.
    Change CheckHaiku to accepts the vocabulary to use and the haiku the check.
 
@@ -36,7 +42,11 @@ import           Fcf.Data.Nat
 import           Fcf.Data.List as L
 
 import           Fcf.Data.MapC as M
+#if __GLASGOW_HASKELL__ >= 902
+import           Fcf.Data.NewText as T
+#else
 import           Fcf.Data.Text as T
+#endif
 
 import           Fcf.Alg.List (Equal)
 
@@ -124,7 +134,11 @@ type instance Eval CheckHaiku =
 -- | We left something here as well. We don't want this executable to compile
 -- if the Haiku is not ok.
 showHaiku
+#if __GLASGOW_HASKELL__ >= 902
+    :: forall symbol. (symbol ~ Eval (Unpack =<< Haiku), 'True ~ Eval CheckHaiku)
+#else
     :: forall symbol. (symbol ~ Eval (ToSymbol =<< Haiku), 'True ~ Eval CheckHaiku)
+#endif
     => String
 showHaiku = TL.symbolVal @symbol Proxy
 

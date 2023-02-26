@@ -1,18 +1,28 @@
 # TODO
 
-## Examples:
+## Examples and tests:
 
-E.g. add examples using the other data structures.
+E.g. add examples using the other data structures. Start building the
+tests in the test-directory. The doc-tests are hard to keep working for
+several GHC versions at the same time and deprecate them.
+
+This will also mean that the code modules will be come a bit cleaner.
+
 
 ## Data structures:
 
-Add the missing methods and doctests.
+Add the missing methods and tests. Move doctests under tests.
 
 - Set
 - NatMap
 - Graphs
 - MapB (Map data structure) but implemented with the balanced trees
 - MapC 
+- Text (e.g. those folding methods)
+
+
+The test structuring requires a bit thinking. New dependencies or some 
+simple structure to help here?
  
 
 ## Morphisms:

@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -26,8 +24,7 @@ Binary trees
 module Fcf.Data.Bitree where
 
 import qualified GHC.TypeLits as TL
-import           Fcf as Fcf
--- import           Fcf.Data.List as Fcf
+import           Fcf
 import           Fcf.Data.Nat as N
 
 --------------------------------------------------------------------------------
@@ -101,7 +98,7 @@ type instance Eval (UnfoldForest f bs) = Eval (Map (UnfoldTree f) bs)
 data Flatten :: Tree a -> Exp [a]
 type instance Eval (Flatten ('Leaf a)) = '[a]
 type instance Eval (Flatten ('Node tr1 a tr2)) =
-    a ': Eval ((Eval (Flatten tr1)) ++ (Eval (Flatten tr2)))
+    a ': Eval (Eval (Flatten tr1) ++ Eval (Flatten tr2))
 
 -- | Get the root node from a 'Tree'.
 data GetRoot :: Tree a -> Exp a

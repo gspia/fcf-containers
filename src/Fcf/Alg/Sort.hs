@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -22,13 +20,13 @@ Maintainer  : gspia
 
 module Fcf.Alg.Sort where
 
+import           GHC.TypeLits (Symbol)
 import qualified GHC.TypeLits as TL
 
 import           Fcf ( If, Eval, Exp, type (<=<), type (=<<)
                      , Flip, Not, TyEq, Pure )
 import           Fcf.Data.List ( ZipWith, Filter, type (++) )
 import           Fcf.Data.Nat (Nat)
-import           Fcf.Data.Symbol (Symbol)
 
 --------------------------------------------------------------------------------
 
@@ -69,7 +67,7 @@ type instance Eval (ListOrd f as bs) = Eval
     )
 
 -- | Comparison for the Nats.
--- 
+--
 -- TODO: Would this fit to Fcf.Data.Nat on first-class-families?
 data NatOrd :: Nat -> Nat -> Exp Ordering
 type instance Eval (NatOrd a b) = TL.CmpNat a b
@@ -109,7 +107,7 @@ type instance Eval (Inord ('BNodeF v l r)) = Eval (l ++ Eval ('[v] ++ r))
 -- __Example__
 --
 -- >>> :kind! Eval (Qsort (N.<) '[5,3,1,9,4,6,3])
--- Eval (Qsort (N.<) '[5,3,1,9,4,6,3]) :: [Nat]
+-- Eval (Qsort (N.<) '[5,3,1,9,4,6,3]) :: [TL.Natural]
 -- = '[1, 3, 3, 4, 5, 6, 9]
 --
 -- >>> :kind! Eval (Qsort (S.<) '[ "bb", "e", "a", "e", "d" ])
