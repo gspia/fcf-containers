@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -74,7 +72,7 @@ module Fcf.Data.NatMap
 import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
                      , Pure, TyEq, Length, Uncurry)
-import qualified Fcf as Fcf (Map, Foldr, Filter)
+import qualified Fcf (Map, Foldr, Filter)
 import qualified Fcf.Data.List as L (Elem, Partition)
 
 import           Fcf.Data.Nat
@@ -85,43 +83,44 @@ import           Fcf.Alg.Morphism
 -- For the doctests:
 
 -- $setup
+-- >>> import qualified GHC.TypeLits as TL
 -- >>> import           Fcf (type (>=))
 -- >>> import           Fcf.Data.Nat
--- >>> import           Fcf.Alg.Symbol (Symbol,Append)
+-- >>> import           Fcf.Data.Symbol
 
 --------------------------------------------------------------------------------
 
 
 -- | A type corresponding to IntMap in the containers.
--- 
+--
 -- The representation is based on type-level lists. Please, do not use
--- that fact but rather use the exposed API. (We hope to change the 
+-- that fact but rather use the exposed API. (We hope to change the
 -- internal data type to balanced tree similar to the one used in containers.
 -- See TODO.md.)
-data NatMap v = NatMap [(Nat,v)]
+newtype NatMap v = NatMap [(Nat,v)]
 
 -- | Empty
--- 
+--
 -- === __Example__
--- 
--- >>> :kind! (Eval Empty :: NatMap Symbol)
--- (Eval Empty :: NatMap Symbol) :: NatMap Symbol
+--
+-- >>> :kind! (Eval Empty :: NatMap TL.Symbol)
+-- (Eval Empty :: NatMap TL.Symbol) :: NatMap TL.Symbol
 -- = 'NatMap '[]
 --
 -- >>> :kind! (Eval Empty :: NatMap String)
 -- (Eval Empty :: NatMap String) :: NatMap [Char]
 -- = 'NatMap '[]
--- 
+--
 -- See also the other examples in this module.
 data Empty :: Exp (NatMap v)
 type instance Eval Empty = 'NatMap '[]
 
 -- | Singleton
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Singleton 1 "haa")
--- Eval (Singleton 1 "haa") :: NatMap Symbol
+-- Eval (Singleton 1 "haa") :: NatMap TL.Symbol
 -- = 'NatMap '[ '(1, "haa")]
 data Singleton :: Nat -> v -> Exp (NatMap v)
 type instance Eval (Singleton k v) = 'NatMap '[ '(k,v)]
@@ -129,9 +128,9 @@ type instance Eval (Singleton k v) = 'NatMap '[ '(k,v)]
 -- | Use FromList to construct a NatMap from type-level list.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: NatMap Symbol
+-- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: NatMap TL.Symbol
 -- = 'NatMap '[ '(1, "haa"), '(2, "hoo")]
 data FromList :: [(Nat,v)] -> Exp (NatMap v)
 type instance Eval (FromList lst) = 'NatMap lst
@@ -141,8 +140,8 @@ type instance Eval (FromList lst) = 'NatMap lst
 -- === __Example__
 --
 -- >>> :kind! Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: NatMap 
---                                                                    Symbol
+-- Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: NatMap
+--                                                                    TL.Symbol
 -- = 'NatMap '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
 data Insert :: Nat -> v -> NatMap v -> Exp (NatMap v)
 type instance Eval (Insert k v ('NatMap lst)) =
@@ -158,19 +157,20 @@ type instance Eval (Insert k v ('NatMap lst)) =
 -- if no old, add
 --
 -- === __Example__
--- 
--- >>> :kind! Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (InsertWith Append 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                                           Symbol
+--
+-- >>> :kind! Eval (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
+--                                                                                 TL.Symbol
 -- = 'NatMap '[ '(5, "xxxa"), '(3, "b")]
 --
--- >>> :kind! Eval (InsertWith Append 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (InsertWith Append 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                                           Symbol
+-- >>> :kind! Eval (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
+--                                                                                 TL.Symbol
 -- = 'NatMap '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
 --
--- >>> :kind! Eval (InsertWith Append 7 "xxx" =<< Empty)
--- Eval (InsertWith Append 7 "xxx" =<< Empty) :: NatMap Symbol
+-- >>> :kind! Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty)
+-- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: NatMap
+--                                                       TL.Symbol
 -- = 'NatMap '[ '(7, "xxx")]
 data InsertWith :: (v -> v -> Exp v) -> Nat -> v -> NatMap v -> Exp (NatMap v)
 type instance Eval (InsertWith f k v ('NatMap lst)) =
@@ -187,17 +187,17 @@ type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
 
 
 -- | Delete
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                          Symbol
+--                                                          TL.Symbol
 -- = 'NatMap '[ '(3, "b")]
 --
 -- >>> :kind! Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                          Symbol
+--                                                          TL.Symbol
 -- = 'NatMap '[ '(5, "a"), '(3, "b")]
 --
 -- >>> :kind! Eval (Delete 7 =<< Empty)
@@ -208,21 +208,21 @@ type instance Eval (Delete k ('NatMap lst)) =
     'NatMap (Eval (Fcf.Filter (Not <=< TyEq k <=< Fst) lst))
 
 -- | Adjust
--- 
+--
 -- === __Example__
--- 
--- >>> :kind! Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Adjust (Append "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                                          Symbol
+--
+-- >>> :kind! Eval (Adjust (AppendSymbol "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Adjust (AppendSymbol "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
+--                                                                                TL.Symbol
 -- = 'NatMap '[ '(5, "new a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (Append "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Adjust (Append "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
---                                                                          Symbol
+-- >>> :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Adjust (AppendSymbol "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
+--                                                                                TL.Symbol
 -- = 'NatMap '[ '(5, "a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (Append "new ") 7 =<< Empty)
--- Eval (Adjust (Append "new ") 7 =<< Empty) :: NatMap Symbol
+-- >>> :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< Empty)
+-- Eval (Adjust (AppendSymbol "new ") 7 =<< Empty) :: NatMap TL.Symbol
 -- = 'NatMap '[]
 data Adjust :: (v -> Exp v) -> Nat -> NatMap v -> Exp (NatMap v)
 type instance Eval (Adjust f k ('NatMap lst)) =
@@ -239,13 +239,15 @@ type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
 -- | Lookup
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe Symbol
+-- Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe
+--                                                          TL.Symbol
 -- = 'Just "a"
 --
 -- >>> :kind! Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe Symbol
+-- Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe
+--                                                          TL.Symbol
 -- = 'Nothing
 data Lookup :: Nat -> NatMap v -> Exp (Maybe v)
 type instance Eval (Lookup k ('NatMap '[])) = 'Nothing
@@ -258,7 +260,7 @@ type instance Eval (Lookup k ('NatMap ('(k1,v) ': rst))) =
 -- | Member
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
@@ -272,7 +274,7 @@ type instance Eval (Member k mp) =
 -- | NotMember
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
@@ -286,7 +288,7 @@ type instance Eval (NotMember k mp) =
 -- | Null
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
@@ -300,9 +302,9 @@ type instance Eval (Null ('NatMap (_ ': _))) = 'False
 -- | Size
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")]) :: Nat
+-- Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")]) :: TL.Natural
 -- = 2
 data Size :: NatMap v -> Exp Nat
 type instance Eval (Size ('NatMap lst)) = Eval (Length lst)
@@ -310,10 +312,10 @@ type instance Eval (Size ('NatMap lst)) = Eval (Length lst)
 -- | Union
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) )
--- Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) ) :: NatMap 
---                                                                                                      Symbol
+-- Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) ) :: NatMap
+--                                                                                                      TL.Symbol
 -- = 'NatMap '[ '(7, "c"), '(5, "a"), '(3, "b")]
 data Union :: NatMap v -> NatMap v -> Exp (NatMap v)
 type instance Eval (Union ('NatMap lst1) ('NatMap lst2)) =
@@ -327,12 +329,12 @@ type instance Eval (UComb '(k,v) lst) =
 
 
 -- | Difference
--- 
+--
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
--- Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: NatMap 
---                                                                                                          Symbol
+-- Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: NatMap
+--                                                                                                          TL.Symbol
 -- = 'NatMap '[ '(3, "a")]
 data Difference :: NatMap v -> NatMap v -> Exp (NatMap v)
 type instance Eval (Difference mp1 mp2) =
@@ -347,10 +349,10 @@ type instance Eval (DiffNotMem mp k _) =
 -- | Intersection
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
--- Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: NatMap 
---                                                                                                            Symbol
+-- Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: NatMap
+--                                                                                                            TL.Symbol
 -- = 'NatMap '[ '(5, "b")]
 data Intersection :: NatMap v -> NatMap v -> Exp (NatMap v)
 type instance Eval (Intersection mp1 mp2) =
@@ -364,7 +366,7 @@ type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
 -- | Disjoint
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: Bool
 -- = 'False
@@ -384,9 +386,9 @@ type instance Eval (Disjoint mp1 mp2) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Fcf.Data.NatMap.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Fcf.Data.NatMap.Map (Append "x") =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap 
---                                                                                  Symbol
+-- >>> :kind! Eval (Fcf.Data.NatMap.Map (AppendSymbol "x") =<< FromList '[ '(5,"a"), '(3,"b")])
+-- Eval (Fcf.Data.NatMap.Map (AppendSymbol "x") =<< FromList '[ '(5,"a"), '(3,"b")]) :: NatMap
+--                                                                                        TL.Symbol
 -- = 'NatMap '[ '(5, "xa"), '(3, "xb")]
 data Map :: (v -> Exp w) -> NatMap v -> Exp (NatMap w)
 type instance Eval (Map f mp) =
@@ -395,7 +397,7 @@ type instance Eval (Map f mp) =
 -- | NatMapWithKey
 --
 -- === __Example__
--- 
+--
 data NatMapWithKey :: (Nat -> v -> Exp w) -> NatMap v -> Exp (NatMap w)
 type instance Eval (NatMapWithKey f mp) =
     'NatMap (Eval (Fcf.Map (Second (Uncurry f))
@@ -409,15 +411,15 @@ type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
 
 -- | Foldr
 --
--- Fold the values in the map using the given right-associative binary operator, 
+-- Fold the values in the map using the given right-associative binary operator,
 -- such that 'foldr f z == foldr f z . elems'.
 --
 -- Note: the order of values in NatMap is not well defined at the moment.
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Fcf.Data.NatMap.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
--- Eval (Fcf.Data.NatMap.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: Nat
+-- Eval (Fcf.Data.NatMap.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: TL.Natural
 -- = 3
 data Foldr :: (v -> w -> Exp w) -> w -> NatMap v -> Exp w
 type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
@@ -426,9 +428,9 @@ type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
 -- | Elems
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [Symbol]
+-- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [TL.Symbol]
 -- = '["a", "b"]
 -- >>> :kind! Eval (Elems =<< Empty)
 -- Eval (Elems =<< Empty) :: [v]
@@ -439,12 +441,12 @@ type instance Eval (Elems ('NatMap lst)) = Eval (Fcf.Map Snd lst)
 -- | Keys
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")]) :: [Nat]
+-- Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")]) :: [TL.Natural]
 -- = '[5, 3]
 -- >>> :kind! Eval (Keys =<< Empty)
--- Eval (Keys =<< Empty) :: [Nat]
+-- Eval (Keys =<< Empty) :: [TL.Natural]
 -- = '[]
 data Keys :: NatMap v -> Exp [Nat]
 type instance Eval (Keys ('NatMap lst)) = Eval (Fcf.Map Fst lst)
@@ -452,13 +454,13 @@ type instance Eval (Keys ('NatMap lst)) = Eval (Fcf.Map Fst lst)
 -- | Assocs
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
---                                                        Symbol)]
+-- Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(TL.Natural,
+--                                                        TL.Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
 -- >>> :kind! Eval (Assocs =<< Empty)
--- Eval (Assocs =<< Empty) :: [(Nat, v)]
+-- Eval (Assocs =<< Empty) :: [(TL.Natural, v)]
 -- = '[]
 data Assocs :: NatMap v -> Exp [(Nat,v)]
 type instance Eval (Assocs ('NatMap lst)) = lst
@@ -466,13 +468,13 @@ type instance Eval (Assocs ('NatMap lst)) = lst
 -- | ToList
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(Nat, 
---                                                        Symbol)]
+-- Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(TL.Natural,
+--                                                        TL.Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
 -- >>> :kind! Eval (ToList =<< Empty)
--- Eval (ToList =<< Empty) :: [(Nat, v)]
+-- Eval (ToList =<< Empty) :: [(TL.Natural, v)]
 -- = '[]
 data ToList :: NatMap v -> Exp [(Nat,v)]
 type instance Eval (ToList ('NatMap lst)) = lst
@@ -480,10 +482,10 @@ type instance Eval (ToList ('NatMap lst)) = lst
 -- | Filter
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
--- Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: NatMap 
---                                                                Nat
+-- Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: NatMap
+--                                                                TL.Natural
 -- = 'NatMap '[ '(3, 30)]
 data Filter :: (v -> Exp Bool) -> NatMap v -> Exp (NatMap v)
 type instance Eval (Filter f ('NatMap lst)) =
@@ -495,7 +497,7 @@ type instance Eval (Filter f ('NatMap lst)) =
 --
 -- >>> :kind! Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)])
 -- Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)]) :: NatMap
---                                                                Nat
+--                                                                TL.Natural
 -- = 'NatMap '[ '(6, 4)]
 data FilterWithKey :: (Nat -> v -> Exp Bool) -> NatMap v -> Exp (NatMap v)
 type instance Eval (FilterWithKey f ('NatMap lst)) =
@@ -504,11 +506,11 @@ type instance Eval (FilterWithKey f ('NatMap lst)) =
 -- | Partition
 --
 -- === __Example__
--- 
+--
 -- >>> :kind! Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
--- Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: (NatMap 
---                                                                    Nat, 
---                                                                  NatMap Nat)
+-- Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: (NatMap
+--                                                                    TL.Natural,
+--                                                                  NatMap TL.Natural)
 -- = '( 'NatMap '[ '(3, 30)], 'NatMap '[ '(5, 50)])
 data Partition :: (v -> Exp Bool) -> NatMap v -> Exp (NatMap v, NatMap v)
 type instance Eval (Partition f ('NatMap lst)) =
@@ -516,5 +518,4 @@ type instance Eval (Partition f ('NatMap lst)) =
 
 data PartitionHlp :: ([(Nat,v)],[(Nat,v)]) -> Exp (NatMap v, NatMap v)
 type instance Eval (PartitionHlp '(xs,ys)) = '( 'NatMap xs, 'NatMap ys)
-
 

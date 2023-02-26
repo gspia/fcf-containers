@@ -12,22 +12,19 @@ Copyright   : (c) gspia 2020-
 License     : BSD
 Maintainer  : gspia
 
-= Fcf.Data.Text
+= Fcf.Data.OldText
 
-We mimick Data.Text but on type level. The current internal representation is based
-on type level lists.  The current (as of early 2023) implementation of this
-Fcf.Data.Text will be deprecated and replaced with the contents of Fcf.Data.NewText
-later 2023 as newer version GHC become more widespread.
-
-The old version working with 9.0.x or less will be kept at Fcf.Data.OldText for
-some time.  Similarly, the module Fcf.Data.NewText contains the functions
-and definitions for better Text type, which will be taken into use after some time.
+We mimick Data.Text but on type level. The internal representation is based on
+type level lists.  This module is for GHC version 9.0.x or less.  The current
+(as of early 2023) implementation of Fcf.Data.Text will be deprecated and replaced
+with the contents of Fcf.Data.NewText later 2023 as newer version GHC become more
+widespread.
 
 -}
 
 --------------------------------------------------------------------------------
 
-module Fcf.Data.Text
+module Fcf.Data.OldText
     ( Text (..)
 
     -- * Creation

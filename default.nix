@@ -3,6 +3,11 @@
   # compiler ? "ghc8107"
   # compiler ? "ghc902"
   # compiler ? "ghc922"
+  # compiler ? "ghc924"
+  # compiler ? "ghc925" # listlike-tests are extremely slow
+  # compiler ? "ghc926" # not yet
+  # compiler ? "ghc942"
+  # compiler ? "ghc943"
 } :
 let
   config = {
@@ -22,9 +27,15 @@ let
             (pkgs.fetchFromGitHub { # 0.8.0.1
               owner  = "Lysxia";
               repo   = "first-class-families";
-              rev    = "d4780864ed9b11343b7b26050e39b2048a8e61f6";
-              sha256 = "1iw0dryz66z4k9lsj1kayf17xs38i8bdk9aqi2qz49vcbhnfw8pd";
+              rev    = "933c2527de9bfcb162e0eebcbcdac4f28a39bd3b";
+              sha256 = "0k66s3bg71pm890zgr5w88zv7vcrxfwd74c0dcn945k91nzn41b2";
             }) {};
+            # (pkgs.fetchFromGitHub { # 0.8.0.1
+            #   owner  = "Lysxia";
+            #   repo   = "first-class-families";
+            #   rev    = "d4780864ed9b11343b7b26050e39b2048a8e61f6";
+            #   sha256 = "1iw0dryz66z4k9lsj1kayf17xs38i8bdk9aqi2qz49vcbhnfw8pd";
+            # }) {};
             # something for the next version?
             #  rev    = "9fe4ce36cf1cd4b0f5af59c923c15b9085c48cd6";
             #  sha256 = "1677ylhhf1mwwfs6j2p6gbn2f6mzsx4zmaihz8v9v07h845wz8l7";

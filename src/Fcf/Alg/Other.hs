@@ -30,6 +30,7 @@ import           Fcf
 
 -- $setup
 -- >>> import           GHC.Types
+-- >>> import qualified GHC.TypeLits as TL
 
 --------------------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ import           Fcf
 --
 -- >>> :kind! Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1))
 -- Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1)) :: Maybe
---                                                           (Symbol, Nat)
+--                                                           (Symbol, TL.Natural)
 -- = 'Just '("txt", 1)
 data PairMaybeToMaybePair :: (Maybe a, Maybe b) -> Exp (Maybe (a,b))
 type instance Eval (PairMaybeToMaybePair '( 'Nothing, _)) = 'Nothing
