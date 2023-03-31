@@ -88,6 +88,7 @@ test-suite fcf-test
       base
     , first-class-families
     , fcf-containers
+    , mtl
 
 test-suite fcf-doctest
   type:                exitcode-stdio-1.0
