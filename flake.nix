@@ -18,11 +18,12 @@
         root = ./.;
         include = [
           (nix-filter.lib.inDirectory "src")
-          (nix-filter.lib.inDirectory "bench")
+          (nix-filter.lib.inDirectory "examples")
           (nix-filter.lib.inDirectory "test")
           (nix-filter.lib.matchExt "hs")
           ./fcf-containers.cabal
-          ./cabal.project.local
+          ./cabal.project
+          ./LICENSE
         ];
       };
 
@@ -61,7 +62,7 @@
 
     in
       {
-        inherit fcf-containers;
+        library = fcf-containers;
         # packages.x86_64-linux.default = ;
         devShell.x86_64-linux = shell;
       };
