@@ -14,7 +14,7 @@
 Example on how to do compile-time (ie type-level) computations and how
 to get the results into use on term-level (ie runtime).
 
-The original problem is described in 
+The original problem is described in
 [aoc 19 d6](https://adventofcode.com/2019/day/6). We use the described
 example input data in a bit different form. See the link for the
 original data and answer.

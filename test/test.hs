@@ -1,6 +1,8 @@
 {-# LANGUAGE
     DataKinds,
     KindSignatures,
+    TypeFamilies,
+    UndecidableInstances,
     TypeOperators #-}
 
 --------------------------------------------------------------------------------
@@ -18,6 +20,9 @@ import           Fcf.Data.List
 
 --------------------------------------------------------------------------------
 
+import           Test.Data (tests)
+
+
 
 -- Compile-time tests
 
@@ -27,7 +32,10 @@ _ = Refl :: Eval (ToList =<< PowerSet  =<< FromList '[1,2])
 -- Dummy
 
 main :: IO ()
-main = pure ()
+main = 
+  if tests 
+    then pure ()
+    else error "Tests not ok."
 
 --------------------------------------------------------------------------------
 -- Applicative

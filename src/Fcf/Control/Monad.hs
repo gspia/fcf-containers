@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
@@ -27,8 +25,16 @@ module Fcf.Control.Monad where
 import           Control.Monad.Identity
 import           GHC.TypeNats as TN
 
-import           Fcf as Fcf hiding (type (<*>))
+import           Fcf hiding (type (<*>))
 import           Fcf.Class.Monoid (type (<>), MEmpty)
+
+--------------------------------------------------------------------------------
+
+-- For the doctests:
+
+-- $setup
+-- >>> import qualified GHC.TypeLits as TL
+-- >>> import qualified Fcf.Combinators as C
 
 --------------------------------------------------------------------------------
 -- Functor instances
@@ -74,14 +80,14 @@ type instance Eval (Return a) = '(MEmpty, MEmpty, MEmpty, a)
 -- === __Example__
 --
 -- >>> :kind! Eval ('Identity Plus2 <*> 'Identity 5)
--- Eval ('Identity Plus2 <*> 'Identity 5) :: Identity Nat
+-- Eval ('Identity Plus2 <*> 'Identity 5) :: Identity Natural
 -- = 'Identity 7
 --
 -- >>> :kind! Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[4,5,6,7])
--- Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[4,5,6,7]) :: [Nat]
+-- Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[4,5,6,7]) :: [Natural]
 -- = '[5, 6, 7, 8, 40, 50, 60, 70]
 -- >>> :kind! Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[])
--- Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[]) :: [Nat]
+-- Eval ( (<*>) '[ (Fcf.+) 1, (Fcf.*) 10] '[]) :: [Natural]
 -- = '[]
 -- >>> :kind! Eval ( (<*>) '[] '[4,5,6,7])
 -- Eval ( (<*>) '[] '[4,5,6,7]) :: [b]
@@ -109,7 +115,7 @@ type instance Eval ('Right f <*> m) = Eval (Map f m)
 -- For example, 'Symbol's concatenate:
 --
 -- >>> :kind! Eval ('("hello", (Fcf.+) 15) <*> '("world!", 2002))
--- Eval ('("hello", (Fcf.+) 15) <*> '("world!", 2002)) :: (GHC.Types.Symbol,
+-- Eval ('("hello", (Fcf.+) 15) <*> '("world!", 2002)) :: (TL.Symbol,
 --                                                         Natural)
 -- = '("helloworld!", 2017)
 type instance Eval ('(u, f) <*> '(v, x)) = '(u <> v, Eval (f x))
@@ -125,7 +131,7 @@ type instance Eval ('(a, b, c, f) <*> '(a', b', c', x)) = '(a <> a', b <> b', c 
 -- === __Example__
 --
 -- >>> :kind! Eval (LiftA2 (Fcf.+) '[1,2] '[3,4])
--- Eval (LiftA2 (Fcf.+) '[1,2] '[3,4]) :: [Nat]
+-- Eval (LiftA2 (Fcf.+) '[1,2] '[3,4]) :: [Natural]
 -- = '[4, 5, 5, 6]
 --
 --
@@ -156,12 +162,12 @@ type instance Eval (LiftA2 f fa fb) = Eval (Eval (Map (App2 f) fa) <*> fb)
 -- the same time.
 --
 -- >>> :kind! Eval ('[5,6,7] >>= Plus2M)
--- Eval ('[5,6,7] >>= Plus2M) :: [Nat]
+-- Eval ('[5,6,7] >>= Plus2M) :: [Natural]
 -- = '[7, 8, 8, 9, 9, 10]
 --
 --
 -- >>> :kind! Eval (XsPlusYsMonadic '[1,2,3] '[4,5,6])
--- Eval (XsPlusYsMonadic '[1,2,3] '[4,5,6]) :: [Nat]
+-- Eval (XsPlusYsMonadic '[1,2,3] '[4,5,6]) :: [Natural]
 -- = '[5, 6, 7, 6, 7, 8, 7, 8, 9]
 data (>>=) :: m a -> (a -> Exp (m b)) -> Exp (m b)
 
@@ -195,10 +201,10 @@ type instance Eval ('(u, v, w, a) >>= k) = Eval ('(u, v, w, Id) <*> Eval (k a))
 --
 --
 -- >>> :kind! Eval ( 'Just 1 >> 'Just 2)
--- Eval ( 'Just 1 >> 'Just 2) :: Maybe Nat
+-- Eval ( 'Just 1 >> 'Just 2) :: Maybe Natural
 -- = 'Just 2
 -- >>> :kind! Eval ( 'Nothing >> 'Just 2)
--- Eval ( 'Nothing >> 'Just 2) :: Maybe Nat
+-- Eval ( 'Nothing >> 'Just 2) :: Maybe Natural
 -- = 'Nothing
 --
 data (>>) :: m a -> m b -> Exp (m b)
@@ -238,13 +244,13 @@ type instance Eval (ForM ta f) = Eval (MapM f ta)
 -- === __Example__
 --
 -- >>> import GHC.TypeLits as TL (Symbol, type (-))
--- >>> data Lambda :: Nat -> Nat -> Exp (Either Symbol Nat)
+-- >>> data Lambda :: Nat -> Nat -> Exp (Either Symbol Natural)
 -- >>> type instance Eval (Lambda a b) = If (Eval (a >= b)) ('Right (a TL.- b)) ('Left "Nat cannot be negative")
 -- >>> :kind! Eval (FoldlM Lambda 5 '[1,1,1])
--- Eval (FoldlM Lambda 5 '[1,1,1]) :: Either Symbol Nat
+-- Eval (FoldlM Lambda 5 '[1,1,1]) :: Either Symbol Natural
 -- = 'Right 2
 -- >>> :kind! Eval (FoldlM Lambda 5 '[1,4,1])
--- Eval (FoldlM Lambda 5 '[1,4,1]) :: Either Symbol Nat
+-- Eval (FoldlM Lambda 5 '[1,4,1]) :: Either Symbol Natural
 -- = 'Left "Nat cannot be negative"
 --
 data FoldlM :: (b -> a -> Exp (m b)) -> b -> t a -> Exp (m b)
@@ -259,7 +265,7 @@ type instance Eval (FoldlM f z0 xs) = Eval ((Eval (Foldr (FoldlMHelper f) Return
 -- === __Example__
 --
 -- >>> :kind! Eval (Traverse Id '[ '[1,2], '[3,4]])
--- Eval (Traverse Id '[ '[1,2], '[3,4]]) :: [[Nat]]
+-- Eval (Traverse Id '[ '[1,2], '[3,4]]) :: [[Natural]]
 -- = '[ '[1, 3], '[1, 4], '[2, 3], '[2, 4]]
 --
 --
@@ -270,7 +276,7 @@ data Traverse :: (a -> Exp (f b)) -> t a -> Exp (f (t b))
 
 -- []
 type instance Eval (Traverse f lst) =
-    Eval (Foldr (Cons_f f) (Eval (Return '[])) lst)
+    Eval (Foldr (ConsHelper f) (Eval (Return '[])) lst)
 
 -- Maybe
 type instance Eval (Traverse f 'Nothing) = Eval (Return 'Nothing)
@@ -289,19 +295,19 @@ type instance Eval (Traverse f '(x, y)) = Eval (Map (Tuple2 x) (Eval (f y)))
 -- === __Example__
 --
 -- >>> :kind! Eval (Sequence ('Just ('Right 5)))
--- Eval (Sequence ('Just ('Right 5))) :: Either a (Maybe Nat)
+-- Eval (Sequence ('Just ('Right 5))) :: Either a (Maybe Natural)
 -- = 'Right ('Just 5)
 --
 -- >>> :kind! Eval (Sequence '[ 'Just 3, 'Just 5, 'Just 7])
--- Eval (Sequence '[ 'Just 3, 'Just 5, 'Just 7]) :: Maybe [Nat]
+-- Eval (Sequence '[ 'Just 3, 'Just 5, 'Just 7]) :: Maybe [Natural]
 -- = 'Just '[3, 5, 7]
 --
 -- >>> :kind! Eval (Sequence '[ 'Just 3, 'Nothing, 'Just 7])
--- Eval (Sequence '[ 'Just 3, 'Nothing, 'Just 7]) :: Maybe [Nat]
+-- Eval (Sequence '[ 'Just 3, 'Nothing, 'Just 7]) :: Maybe [Natural]
 -- = 'Nothing
 --
 -- >>> :kind! Eval (Sequence '[ '[1,2], '[3,4]])
--- Eval (Sequence '[ '[1,2], '[3,4]]) :: [[Nat]]
+-- Eval (Sequence '[ '[1,2], '[3,4]]) :: [[Natural]]
 -- = '[ '[1, 3], '[1, 4], '[2, 3], '[2, 4]]
 --
 --
@@ -345,8 +351,8 @@ data FoldlMHelper :: (b -> a -> Exp (m b)) -> a -> (b -> Exp (m b)) -> Exp (b ->
 type instance Eval (FoldlMHelper f a b) = Flip (>>=) b <=< Flip f a
 
 -- | Helper for [] traverse
-data Cons_f :: (a -> Exp (f b)) -> a -> f [b] -> Exp (f [b])
-type instance Eval (Cons_f f x ys) = Eval (LiftA2 (Pure2 '(:)) (Eval (f x)) ys)
+data ConsHelper :: (a -> Exp (f b)) -> a -> f [b] -> Exp (f [b])
+type instance Eval (ConsHelper f x ys) = Eval (LiftA2 (Pure2 '(:)) (Eval (f x)) ys)
 -- The following would need an extra import line:
 -- type instance Eval (Cons_f f x ys) = Eval (LiftA2 Cons (Eval (f x)) ys)
 

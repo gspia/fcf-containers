@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -56,7 +54,7 @@ module Fcf.Alg.Symbol
 
 --------------------------------------------------------------------------------
 
--- import           GHC.TypeLits (Symbol)
+import           GHC.TypeLits (Symbol)
 import qualified GHC.TypeLits as TL
 
 import           Fcf.Core (Eval, Exp)

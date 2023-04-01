@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -44,7 +42,7 @@ import           Fcf
 --------------------------------------------------------------------------------
 
 -- | Structure that 'Cata' can fold and that is a result structure of 'Ana'.
-data Fix f = Fix (f (Fix f))
+newtype Fix f = Fix (f (Fix f))
 
 -- | Commonly used name describing the method 'Cata' eats.
 type Algebra f a = f a -> Exp a
@@ -79,7 +77,7 @@ type instance Eval (Cata alg ('Fix b)) = alg @@ Eval (Map (Cata alg) b)
 -- :}
 --
 -- >>> :kind! Eval (Ana NToOneCoA 3)
--- Eval (Ana NToOneCoA 3) :: Fix (ListF Nat)
+-- Eval (Ana NToOneCoA 3) :: Fix (ListF TL.Natural)
 -- = 'Fix ('ConsF 3 ('Fix ('ConsF 2 ('Fix ('ConsF 1 ('Fix 'NilF))))))
 data Ana :: CoAlgebra f a -> a -> Exp (Fix f)
 type instance Eval (Ana coalg a) = 'Fix (Eval (Map (Ana coalg) (Eval (coalg a))))
@@ -100,7 +98,7 @@ type instance Eval (Ana coalg a) = 'Fix (Eval (Map (Ana coalg) (Eval (coalg a)))
 -- :}
 --
 -- >>> :kind! Eval (Hylo SumAlg NToOneCoA 5)
--- Eval (Hylo SumAlg NToOneCoA 5) :: Nat
+-- Eval (Hylo SumAlg NToOneCoA 5) :: TL.Natural
 -- = 15
 data Hylo :: Algebra f a -> CoAlgebra f b -> b -> Exp a
 type instance Eval (Hylo alg coalg a) = Eval (Cata alg =<< Ana coalg a)
@@ -186,7 +184,7 @@ type instance Eval (Histo alg fx) = Eval (Attr =<< Cata (HistoAlg alg) fx)
 -- === __Example__
 --
 -- >>> :kind! Eval (First ((+) 1) '(3,"a"))
--- Eval (First ((+) 1) '(3,"a")) :: (Nat, TL.Symbol)
+-- Eval (First ((+) 1) '(3,"a")) :: (TL.Natural, TL.Symbol)
 -- = '(4, "a")
 data First :: (a -> Exp b) -> f a c -> Exp (f b c)
 
@@ -202,7 +200,7 @@ type instance Eval (First f ('Right b)) = 'Right b
 -- === __Example__
 --
 -- >>> :kind! Eval (Second ((+) 1) '("a",3))
--- Eval (Second ((+) 1) '("a",3)) :: (TL.Symbol, Nat)
+-- Eval (Second ((+) 1) '("a",3)) :: (TL.Symbol, TL.Natural)
 -- = '("a", 4)
 data Second :: (c -> Exp d) -> f a c -> Exp (f a d)
 

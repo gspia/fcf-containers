@@ -1,0 +1,41 @@
+
+
+
+data FstToList :: (Char, TL.Symbol) -> Exp [Char]
+type instance Eval (FstToList '(c, _)) = '[c]
+
+data HeadAsLst :: TL.Symbol -> Exp [Char]
+type instance Eval (HeadAsLst sym) = 
+    Eval (FromMaybe '[] =<< F.FMap FstToList =<< UnconsSymbol sym)
+    -- Eval (Join =<< MaybeToList =<< F.FMap FstToList =<< UnconsSymbol sym)
+
+data RestAsSym :: TL.Symbol -> Exp TL.Symbol
+type instance Eval (RestAsSym sym) = 
+    Eval (FromMaybe "" =<< F.FMap Snd =<< UnconsSymbol sym)
+
+
+-- data FMapCat :: Maybe [Char] -> Exp (Maybe (([Char] -> [Char] -> *)))
+-- type instance Eval (FMapCat 'Nothing) = 'Nothing
+-- type instance Eval (FMapCat ('Just lst)) =
+--      ('Just ( (++) lst))
+
+          -- (
+          -- (F.FMap (++) 
+          -- (Eval (F.FMap FstToList =<< UnconsSymbol sym))
+          -- )
+
+-- data ToCharListHelp2 :: Maybe TL.Symbol -> Exp (Maybe [Char])
+-- type instance Eval (ToCharListHelp2 'Nothing) = 'Nothing
+-- type instance Eval (ToCharListHelp2 ('Just sym)) = 
+--     (If (Eval (IsNothing =<< UnconsSymbol sym))
+--         ( 'Nothing)
+--         ( -- else
+--          Eval (
+--           (Eval (FMapCat (Eval (F.FMap FstToList =<< UnconsSymbol sym))))
+--           M.<*>
+--           (Eval (ToCharListHelp2 =<< F.FMap Snd =<< UnconsSymbol sym))
+--         ))
+--     )
+
+
+

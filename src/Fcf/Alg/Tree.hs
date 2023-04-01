@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -60,14 +58,14 @@ type instance Eval (TreeToFix ('Node a (b ': bs))) =
 -- See the implementation of 'Fib' for an example.
 data SumNodesAlg :: Algebra (TreeF Nat) Nat
 type instance Eval (SumNodesAlg ('NodeF x '[]))       = x
-type instance Eval (SumNodesAlg ('NodeF x (b ': bs))) = x TL.+ (Eval (Sum (b ': bs)))
+type instance Eval (SumNodesAlg ('NodeF x (b ': bs))) = x TL.+ Eval (Sum (b ': bs))
 
 -- | Count the nodes of TreeF. 
 --
 -- See the 'Size' for an example.
 data CountNodesAlg :: Algebra (TreeF a) Nat
 type instance Eval (CountNodesAlg ('NodeF x '[]))       = 1
-type instance Eval (CountNodesAlg ('NodeF x (b ': bs))) = 1 TL.+ (Eval (Sum (b ': bs)))
+type instance Eval (CountNodesAlg ('NodeF x (b ': bs))) = 1 TL.+ Eval (Sum (b ': bs))
 
 
 -- | Size of the Tree is the number of nodes in it.
@@ -86,7 +84,7 @@ type instance Eval (CountNodesAlg ('NodeF x (b ': bs))) = 1 TL.+ (Eval (Sum (b '
 -- :}
 --
 -- >>> :kind! Eval (Size =<< UnfoldTree BuildNode 1)
--- Eval (Size =<< UnfoldTree BuildNode 1) :: Nat
+-- Eval (Size =<< UnfoldTree BuildNode 1) :: TL.Natural
 -- = 7
 data Size :: Tree a -> Exp Nat
 type instance Eval (Size tr) = Eval (Cata CountNodesAlg =<< TreeToFix tr)
@@ -117,7 +115,7 @@ type instance Eval (BuildFibTreeCoA n) =
 -- __Example__
 --
 -- >>> :kind! Eval (FibHylo 10)
--- Eval (FibHylo 10) :: Nat
+-- Eval (FibHylo 10) :: TL.Natural
 -- = 55
 data FibHylo :: Nat -> Exp Nat
 type instance Eval (FibHylo n) = Eval (Hylo SumNodesAlg BuildFibTreeCoA n)
@@ -143,13 +141,15 @@ data FSum :: f a -> Exp a
 type instance Eval (FSum ('NodeF a '[])) = 0
 type instance Eval (FSum ('NodeF a (b ': bs))) = Eval (Sum (b ': bs))
 
+
 -- | Sizes example from Recursion Schemes by example, Tim Williams. This annotes
 -- each node with the size of its subtree.
 --
 -- __Example__
 --
 -- >>> :kind! Eval (Sizes =<< Ana BuildNodeCoA 1)
--- Eval (Sizes =<< Ana BuildNodeCoA 1) :: Fix (AnnF (TreeF Nat) Nat)
+-- Eval (Sizes =<< Ana BuildNodeCoA 1) :: Fix
+--                                          (AnnF (TreeF TL.Natural) TL.Natural)
 -- = 'Fix
 --     ('AnnF
 --        '( 'NodeF
@@ -203,13 +203,13 @@ type instance Eval (FibAlgebra ('Succ ('Fix ('AnnF '( 'Zero, _) )))) = 1
 type instance Eval (FibAlgebra ('Succ ('Fix ('AnnF '( 'Succ ('Fix ('AnnF '( _, n))) , m) )))) = Eval (n + m)
 
 -- | Efficient Fibonacci type-level function
--- (from Recursion Schemes by example, Tim Williams). Compare this to 
+-- (from Recursion Schemes by example, Tim Williams). Compare this to
 -- 'FibHylo'.
 --
 -- __Example__
 --
 -- >>> :kind! Eval (FibHisto 100)
--- Eval (FibHisto 100) :: Nat
+-- Eval (FibHisto 100) :: TL.Natural
 -- = 354224848179261915075
 data FibHisto :: Nat -> Exp Nat
 type instance Eval (FibHisto n) = Eval (Histo FibAlgebra =<< NatToFix n)

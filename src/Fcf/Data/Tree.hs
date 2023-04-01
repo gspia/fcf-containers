@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -34,7 +32,7 @@ Many of the examples are from containers-package.
 
 module Fcf.Data.Tree where
 
-import           Fcf as Fcf
+import           Fcf
 import           Fcf.Data.List as Fcf
 
 import           Fcf.Control.Monad as M
@@ -122,7 +120,7 @@ type instance Eval (FoldTree f ('Node a (x ': xs))) =
 -- :}
 --
 -- >>> :kind! Eval (UnfoldTree BuildNode 1)
--- Eval (UnfoldTree BuildNode 1) :: Tree Nat
+-- Eval (UnfoldTree BuildNode 1) :: Tree TL.Natural
 -- = 'Node
 --     1
 --     '[ 'Node 2 '[ 'Node 4 '[], 'Node 5 '[]],
@@ -141,7 +139,7 @@ type instance Eval (UnfoldForest f bs) = Eval (Map (UnfoldTree f) bs)
 -- === __Example__
 --
 -- >>> :kind! Eval (Flatten ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]]))
--- Eval (Flatten ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [Nat]
+-- Eval (Flatten ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [TL.Natural]
 -- = '[1, 2, 3, 4, 5, 6]
 data Flatten :: Tree a -> Exp [a]
 type instance Eval (Flatten ('Node a fs )) = a ': Eval (ConcatMap Flatten fs)
@@ -173,7 +171,7 @@ type instance Eval (SubFLevels (t ': ts)) =
 -- === __Example__
 --
 -- >>> :kind! Eval (Levels ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]]))
--- Eval (Levels ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [[Nat]]
+-- Eval (Levels ('Node 1 '[ 'Node 2 '[ 'Node 3 '[ 'Node 4 '[]]], 'Node 5 '[ 'Node 6 '[]]])) :: [[TL.Natural]]
 -- = '[ '[1], '[2, 5], '[3, 6], '[4]]
 data Levels :: Tree a -> Exp [[a]]
 type instance Eval (Levels tr) = Eval (Unfoldr SubFLevels '[tr])

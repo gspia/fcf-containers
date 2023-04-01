@@ -1,4 +1,29 @@
 
+# 0.8.0
+
+20230226
+
+- Fcf.Data.Char for GHC 9.2.X or higher, the Text will start using this.
+- Fcf.Data.Tuple with Swap method
+- Fcf.Data.Reflect gives methods to turn type-level structures into value-level.
+  These include instances for trees, natMaps, maps, lists, and text. Text instances
+  are only for GHC 9.2.X or higher.
+- Fcf.Data.Symbol for GHC 9.2.x or higher, the Text will start using this.
+- Deprecate the current Text and Text.Internal modules and introduce new using
+  the Symbol module (these are for GHC 9.2.x or higher).
+- Add new dependencies, containers and text (for the Reflect module).
+- Several hlint suggestion fixes included
+
+The "NewText" module could have more methods that the counterpart already has.
+Also, the Reflect module could have more typical instances.
+
+The test will be moved into the test directory and away from the doctests, which
+in turn, will be deprecated. The doctests would be otherwise nice, but they are
+difficult (laborous) to support for several different ghc versions.
+
+This also includes Data.List.Utils and there Foldl and MaybeToList methods.
+
+
 # 0.7.2
 
 2023015
