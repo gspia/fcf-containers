@@ -15,6 +15,7 @@ import           Fcf hiding (type (<*>))
 
 import           Fcf.Data.Set
 import           Fcf.Control.Monad
+import           Fcf.Data.Tuple
 import           Fcf.Class.Monoid
 import           Fcf.Data.List
 
@@ -48,6 +49,9 @@ _ = Refl :: Eval ('[(+) 1,(+) 2] <*> '[3,4])
 
 _ = Refl :: Eval ( (<*>) '[] '[4,5,6,7])
        :~: Eval ( (<*>) '[] '[4,5,6,7])
+
+_ = Refl :: Eval ('[(+) 1,(+) 2] <*> '[3,4])
+       :~: Eval (LiftA2 (+) '[1,2] '[3,4])
 
 --------------------------------------------------------------------------------
 -- Monad

@@ -27,6 +27,7 @@ import           GHC.TypeNats as TN
 
 import           Fcf hiding (type (<*>))
 import           Fcf.Class.Monoid (type (<>), MEmpty)
+import           Fcf.Data.Tuple
 
 --------------------------------------------------------------------------------
 
@@ -137,6 +138,32 @@ type instance Eval ('(a, b, c, f) <*> '(a', b', c', x)) = '(a <> a', b <> b', c 
 --
 data LiftA2 :: (a -> b -> Exp c) -> f a -> f b -> Exp (f c)
 type instance Eval (LiftA2 f fa fb) = Eval (Eval (Map (App2 f) fa) <*> fb)
+
+-- | Type level LiftA3.
+--
+-- === __Example__
+-- 
+-- >>> :kind! Eval (LiftA3 Tuple3 '[1,2] '[3,4] '[5,6])
+-- Eval (LiftA3 Tuple3 '[1,2] '[3,4] '[5,6]) :: [(Natural, Natural,
+--                                                Natural)]
+-- = '[ '(1, 3, 5), '(1, 3, 6), '(1, 4, 5), '(1, 4, 6), '(2, 3, 5),
+--      '(2, 3, 6), '(2, 4, 5), '(2, 4, 6)]
+--
+-- >>> :kind! Eval (LiftA3 Tuple3 ('Right 5) ('Right 6) ('Left "fail"))
+-- Eval (LiftA3 Tuple3 ('Right 5) ('Right 6) ('Left "fail")) :: Either
+--                                                                TL.Symbol (Natural, Natural, c)
+-- = 'Left "fail"
+--
+data LiftA3 :: (a -> b -> c -> Exp d) -> f a -> f b -> f c -> Exp (f d)
+type instance Eval (LiftA3 f fa fb fc) = Eval (Eval (Eval (Map (App3 f) fa) <*> fb) <*> fc)
+
+-- | Type level LiftA4.
+data LiftA4 :: (a -> b -> c -> d -> Exp e) -> f a -> f b -> f c -> f d -> Exp (f e)
+type instance Eval (LiftA4 f fa fb fc fd) = Eval (Eval (Eval (Eval (Map (App4 f) fa) <*> fb) <*> fc) <*> fd)
+
+-- | Type level LiftA5.
+data LiftA5 :: (a -> b -> c -> d -> e -> Exp g) -> f a -> f b -> f c -> f d -> f e -> Exp (f g)
+type instance Eval (LiftA5 f fa fb fc fd fe) = Eval (Eval (Eval (Eval (Eval (Map (App5 f) fa) <*> fb) <*> fc) <*> fd) <*> fe)
 
 --------------------------------------------------------------------------------
 -- Monad
@@ -317,18 +344,6 @@ type instance Eval (Sequence tfa) = Eval (Traverse Id tfa)
 --------------------------------------------------------------------------------
 -- Utility
 
--- | 2-tuple to allow for partial application of 2-tuple at the type level
-data Tuple2 :: a -> b -> Exp (a, b)
-type instance Eval (Tuple2 a b) = '(a,b)
-
--- | 3-tuple to allow for partial application of 3-tuple at the type level
-data Tuple3 :: a -> b -> c -> Exp (a, b, c)
-type instance Eval (Tuple3 a b c) = '(a,b,c)
-
--- | 4-tuple to allow for partial application of 4-tuple at the type level
-data Tuple4 :: a -> b -> c -> d -> Exp (a, b, c, d)
-type instance Eval (Tuple4 a b c d) = '(a,b,c,d)
-
 -- | Id function correspondes to term level 'id'-function.
 data Id :: a -> Exp a
 type instance Eval (Id a) = a
@@ -339,6 +354,18 @@ type instance Eval (Id a) = a
 -- | Needed by LiftA2 instance to partially apply function
 data App2 :: (a -> b -> c) -> a -> Exp (b -> c)
 type instance Eval (App2 f a) = f a
+
+-- | Needed by LiftA3 instance to partially apply function
+data App3 :: (a -> b -> c -> d) -> a -> Exp (b -> Exp (c -> d))
+type instance Eval (App3 f a) = Pure2 f a
+
+-- | Needed by LiftA4 instance to partially apply function
+data App4 :: (a -> b -> c -> d -> e) -> a -> Exp (b -> Exp (c -> Exp (d -> e)))
+type instance Eval (App4 f a) = App3 (f a)
+
+-- | Needed by LiftA5 instance to partially apply function
+data App5 :: (a -> b -> c -> d -> e -> g) -> a -> Exp (b -> Exp (c -> Exp (d -> Exp (e -> g))))
+type instance Eval (App5 f a) = App4 (f a)
 
 -- | Helper for the [] applicative instance.
 data Star_ :: (a -> Exp b) -> f a -> Exp (f b)

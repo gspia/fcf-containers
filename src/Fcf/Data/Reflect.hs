@@ -268,6 +268,44 @@ instance (KnownVal (mems :: [Symbol]) [String]) => KnownVal ('FS.Set mems) (S.Se
   where
     fromType _ = S.fromList (fromType @mems Proxy)
 
+--------------------------------------------------------------------------------
+
+-- Either
+
+instance (KnownVal a a1) => KnownVal ('Left a) (Either a1 b1) where
+    fromType _ = Left (fromType @a Proxy :: a1)
+
+instance (KnownVal b b1) => KnownVal ('Right b) (Either a1 b1) where
+    fromType _ = Right (fromType @b Proxy :: b1)
+
+--------------------------------------------------------------------------------
+
+-- Maybe
+
+instance (KnownVal a a1) => KnownVal ('Just a) (Maybe a1) where
+    fromType _ = Just (fromType @a Proxy :: a1)
+
+instance KnownVal 'Nothing (Maybe a1) where
+    fromType _ = Nothing
+
+--------------------------------------------------------------------------------
+
+-- Tuples
+
+instance (KnownVal a a1, KnownVal b b1) => KnownVal '(a,b) (a1,b1) where
+    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1)
+
+instance (KnownVal a a1, KnownVal b b1, KnownVal c c1) => KnownVal '(a,b,c) (a1,b1,c1) where
+    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1)
+
+instance (KnownVal a a1, KnownVal b b1, KnownVal c c1, KnownVal d d1) => KnownVal '(a,b,c,d) (a1,b1,c1,d1) where
+    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1, fromType @d Proxy :: d1)
+
+instance (KnownVal a a1, KnownVal b b1, KnownVal c c1, KnownVal d d1, KnownVal e e1) => KnownVal '(a,b,c,d,e) (a1,b1,c1,d1,e1) where
+    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1, fromType @d Proxy :: d1, fromType @e Proxy :: e1)
+--------------------------------------------------------------------------------
+
+-- Tuples
 
 --------------------------------------------------------------------------------
 

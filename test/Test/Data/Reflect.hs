@@ -18,8 +18,10 @@ import qualified Data.Tree as DT
 import qualified Data.Text as DTxt
 #endif
 import           Data.Proxy
+import           Control.Applicative
 
 import           Fcf (Eval, type (=<<))
+import           Fcf.Data.Tuple
 import qualified Fcf.Data.Set as FS
 import qualified Fcf.Data.NatMap as FNM
 import qualified Fcf.Data.MapC as FNMC
@@ -27,6 +29,7 @@ import qualified Fcf.Data.MapC as FNMC
 import qualified Fcf.Data.NewText as FTxt
 #endif
 import qualified Fcf.Data.Tree as FT
+import qualified Fcf.Control.Monad as FM
 import           Fcf.Data.Reflect
 
 tests :: Bool
@@ -38,6 +41,7 @@ tests =
   && testText
 #endif
   && testTree
+  && testApplicative
 
 testNatMap 
   :: forall r. (r ~ Eval (FNM.Insert 3 "hih" =<< FNM.FromList '[ '(1,"haa"), '(2,"hoo")])) 
@@ -97,3 +101,46 @@ testText = result == expected
     result   = fromType @r Proxy :: DTxt.Text
     expected = DTxt.pack "trial"
 #endif
+
+
+--------------------------------------------------------------------------------
+-- Applicative
+
+testApplicative :: Bool
+testApplicative =
+               testLiftA2Tuple
+            && testLiftA3Tuple
+            && testLiftA4EitherLeft
+            && testLiftA4EitherRight
+
+testLiftA2Tuple
+  :: forall r. (r ~ Eval (FM.LiftA2 Tuple2 '("hello ", 5) '("world", 6)))
+  => Bool
+testLiftA2Tuple = result == expected
+  where
+    result   = fromType @r Proxy :: (String, (Int, Int))
+    expected = liftA2 (,) ("hello ", 5) ("world", 6)
+
+testLiftA3Tuple
+  :: forall r. (r ~ Eval (FM.LiftA3 Tuple3 '("hello ", "<", 6) '("world", " ", 8) '("!", ">", 10)))
+  => Bool
+testLiftA3Tuple = result == expected
+  where
+    result   = fromType @r Proxy :: (String, String, (Int, Int, Int))
+    expected = liftA3 (,,) ("hello ","<",6) ("world"," ",8) ("!",">",10)
+
+testLiftA4EitherLeft
+  :: forall r. (r ~ Eval (FM.LiftA4 Tuple4 ('Right 5) ('Right 6) ('Right 7) ('Left "fail")))
+  => Bool
+testLiftA4EitherLeft = result == expected
+  where
+    result   = fromType @r Proxy :: Either String (Int,Int,Int,Int)
+    expected = (,,,) <$> Right 5 <*> Right 6 <*> Right 7 <*> Left "fail"
+
+testLiftA4EitherRight
+  :: forall r. (r ~ Eval (FM.LiftA4 Tuple4 ('Right 5) ('Right 6) ('Right 7) ('Right 0)))
+  => Bool
+testLiftA4EitherRight = result == expected
+  where
+    result   = fromType @r Proxy :: Either String (Int,Int,Int,Int)
+    expected = (,,,) <$> Right 5 <*> Right 6 <*> Right 7 <*> Right 0
