@@ -105,7 +105,7 @@ instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol )where
 -- >>> import qualified Data.Text as Txt
 -- >>> :{
 -- afun :: forall r. (r ~ 'FTxt.Text "hmm") => Txt.Text
--- afun = fromType @r Proxy
+-- afun = fromType (Proxy @r)
 -- :}
 --
 -- >>> afun
