@@ -7,7 +7,6 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS_GHC -Wall                       #-}
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
 
@@ -30,13 +29,14 @@ module Fcf.Data.Reflect where
 
 import qualified GHC.TypeLits as TL
 import           GHC.TypeLits (Nat, Symbol, KnownNat, KnownSymbol)
+import           Data.String (fromString, IsString)
 import           Data.Proxy
-import qualified Data.Map.Strict as MS
+-- import qualified Data.Map.Strict as MS
+import qualified Data.Map as DM
 import qualified Data.IntMap.Strict as IMS
 import qualified Data.Set as S
-#if __GLASGOW_HASKELL__ >= 902
-import qualified Data.Text as Txt
-#endif
+-- #if __GLASGOW_HASKELL__ >= 902
+-- #endif
 import qualified Data.Tree as T
 
 -- import qualified Fcf.Core as C (Eval)
@@ -87,241 +87,22 @@ instance (TL.KnownNat n, KnownNats ns) => KnownNats (n : ns) where
 
 --------------------------------------------------------------------------------
 
-class KnownVal typeval val where
-    fromType :: Proxy typeval -> val
+class KnownVal val kind where
+    fromType :: Proxy kind -> val
 
-instance KnownNat n => KnownVal (n :: Nat) Integer where
-    fromType _ = TL.natVal (Proxy @n)
-
-instance KnownNat n => KnownVal (n :: Nat) Int where
+instance (KnownNat n, Num a) => KnownVal a (n :: Nat) where
     fromType _ = fromInteger $ TL.natVal (Proxy @n)
 
-instance KnownSymbol s => KnownVal (s :: Symbol) String where
-    fromType _ = TL.symbolVal (Proxy @s)
-
---------------------------------------------------------------------------------
-
--- List instances
-
-instance KnownVal ('[] :: [Nat]) [Integer] where
-    fromType _ = []
-
-instance (KnownNat n, KnownVal ns [Integer]) => KnownVal (n : ns :: [Nat]) [Integer] where
-    fromType _ = TL.natVal (Proxy @n) : fromType (Proxy @ns)
-
-
-instance KnownVal ('[] :: [Nat]) [Int] where
-    fromType _ = []
-
-instance (KnownNat n, KnownVal ns [Int]) => KnownVal (n : ns :: [Nat]) [Int] where
-    fromType _ = fromInteger (TL.natVal (Proxy @n)) : fromType (Proxy @ns)
-
-
-instance KnownVal ('[] :: [Symbol]) [String] where
-    fromType _ = []
-
-instance (KnownSymbol sym, KnownVal syms [String])
-    => KnownVal (sym : syms :: [Symbol]) [String]
-  where
-    fromType _ = TL.symbolVal (Proxy @sym) : fromType (Proxy @syms)
-
-
-instance KnownVal ('[] :: [(Nat,Nat)]) [(Int,Int)] where
-    fromType _ = []
--- This helps with NatMap instances
-
-instance (KnownNat n, KnownNat m, KnownVal nms [(Int,Int)])
-    => KnownVal ( '(n,m) : nms :: [(Nat,Nat)]) [(Int,Int)]
-  where
-    fromType _ =
-        (fromInteger (TL.natVal (Proxy @n)), fromInteger (TL.natVal (Proxy @m)))
-        : fromType (Proxy @nms)
--- This helps with NatMap instances
-
-instance KnownVal ('[] :: [(Nat,Symbol)]) [(Int,String)] where
-    fromType _ = []
--- This helps with NatMap instances
-
-instance (KnownNat n, KnownSymbol m, KnownVal nms [(Int,String)])
-    => KnownVal ( '(n,m) : nms :: [(Nat,Symbol)]) [(Int,String)]
-  where
-    fromType _ =
-        (fromInteger (TL.natVal (Proxy @n)), TL.symbolVal (Proxy @m))
-        : fromType (Proxy @nms)
--- This helps with NatMap instances
-
---------------------------------------------------------------------------------
-
--- Trees
-
--- instances for Forests, that is, lists of Trees.
-instance KnownVal '[] [T.Tree Int] where fromType _ = []
-
--- instances for Forests
-instance (KnownVal t (T.Tree Int), KnownVal trees [T.Tree Int])
-    => KnownVal (t : trees) [T.Tree Int]
-  where
-    fromType _ = fromType @t Proxy : fromType @trees Proxy
-
--- instance for Trees (using forest definition).
-instance (KnownNat n, KnownVal trees [T.Tree Int])
-    => KnownVal ('FT.Node (n :: Nat) trees) (T.Tree Int)
-  where
-    fromType _ = T.Node (fromType @n Proxy) (fromType @trees Proxy)
-
-
-instance KnownVal '[] [T.Tree Integer] where fromType _ = []
-
-instance (KnownVal t (T.Tree Integer), KnownVal trees [T.Tree Integer])
-    => KnownVal (t : trees) [T.Tree Integer]
-  where
-    fromType _ = fromType @t Proxy : fromType @trees Proxy
-
-instance (KnownNat n, KnownVal trees [T.Tree Integer])
-    => KnownVal ('FT.Node (n :: Nat) trees) (T.Tree Integer)
-  where
-    fromType _ = T.Node (fromType @n Proxy) (fromType @trees Proxy)
-
-
-instance KnownVal '[] [T.Tree String] where fromType _ = []
-
-instance (KnownVal t (T.Tree String), KnownVal trees [T.Tree String])
-    => KnownVal (t : trees) [T.Tree String]
-  where
-    fromType _ = fromType @t Proxy : fromType @trees Proxy
-
-instance (KnownSymbol n, KnownVal trees [T.Tree String])
-    => KnownVal ('FT.Node (n :: Symbol) trees) (T.Tree String)
-  where
-    fromType _ = T.Node (fromType @n Proxy) (fromType @trees Proxy)
-
-
---------------------------------------------------------------------------------
-
--- NatMaps / IntMaps
-
-instance (KnownVal (pairs :: [(Nat,Nat)]) [(Int,Int)])
-    => KnownVal ('NM.NatMap pairs) (IMS.IntMap Int)
-  where
-    fromType _ = IMS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Nat,Integer)]) [(Int,Integer)])
-    => KnownVal ('NM.NatMap pairs) (IMS.IntMap Integer)
-  where
-    fromType _ = IMS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Nat,Symbol)]) [(Int,String)])
-    => KnownVal ('NM.NatMap pairs) (IMS.IntMap String)
-  where
-    fromType _ = IMS.fromList (fromType @pairs Proxy)
-
-
---------------------------------------------------------------------------------
-
--- Maps
-
-instance (KnownVal (pairs :: [(Nat,Nat)]) [(Int,Int)])
-    => KnownVal ('MC.MapC pairs) (MS.Map Int Int)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Nat,Integer)]) [(Int,Integer)])
-    => KnownVal ('MC.MapC pairs) (MS.Map Int Integer)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Nat,Symbol)]) [(Int,String)])
-    => KnownVal ('MC.MapC pairs) (MS.Map Int String)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-
-instance (KnownVal (pairs :: [(Symbol,Nat)]) [(String,Int)])
-    => KnownVal ('MC.MapC pairs) (MS.Map String Int)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Symbol,Integer)]) [(String,Integer)])
-    => KnownVal ('MC.MapC pairs) (MS.Map String Integer)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-instance (KnownVal (pairs :: [(Symbol,Symbol)]) [(String,String)])
-    => KnownVal ('MC.MapC pairs) (MS.Map String String)
-  where
-    fromType _ = MS.fromList (fromType @pairs Proxy)
-
-
---------------------------------------------------------------------------------
-
--- Set
- 
-instance (KnownVal (mems :: [Nat]) [Int]) => KnownVal ('FS.Set mems) (S.Set Int)
-  where
-    fromType _ = S.fromList (fromType @mems Proxy)
-
-instance (KnownVal (mems :: [Nat]) [Integer]) => KnownVal ('FS.Set mems) (S.Set Integer)
-  where
-    fromType _ = S.fromList (fromType @mems Proxy)
-
-instance (KnownVal (mems :: [Symbol]) [String]) => KnownVal ('FS.Set mems) (S.Set String)
-  where
-    fromType _ = S.fromList (fromType @mems Proxy)
-
---------------------------------------------------------------------------------
-
--- Either
-
-instance (KnownVal a a1) => KnownVal ('Left a) (Either a1 b1) where
-    fromType _ = Left (fromType @a Proxy :: a1)
-
-instance (KnownVal b b1) => KnownVal ('Right b) (Either a1 b1) where
-    fromType _ = Right (fromType @b Proxy :: b1)
-
---------------------------------------------------------------------------------
-
--- Maybe
-
-instance (KnownVal a a1) => KnownVal ('Just a) (Maybe a1) where
-    fromType _ = Just (fromType @a Proxy :: a1)
-
-instance KnownVal 'Nothing (Maybe a1) where
-    fromType _ = Nothing
-
---------------------------------------------------------------------------------
-
--- Tuples
-
-instance (KnownVal a a1, KnownVal b b1) => KnownVal '(a,b) (a1,b1) where
-    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1)
-
-instance (KnownVal a a1, KnownVal b b1, KnownVal c c1) => KnownVal '(a,b,c) (a1,b1,c1) where
-    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1)
-
-instance (KnownVal a a1, KnownVal b b1, KnownVal c c1, KnownVal d d1) => KnownVal '(a,b,c,d) (a1,b1,c1,d1) where
-    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1, fromType @d Proxy :: d1)
-
-instance (KnownVal a a1, KnownVal b b1, KnownVal c c1, KnownVal d d1, KnownVal e e1) => KnownVal '(a,b,c,d,e) (a1,b1,c1,d1,e1) where
-    fromType _ = (fromType @a Proxy :: a1, fromType @b Proxy :: b1, fromType @c Proxy :: c1, fromType @d Proxy :: d1, fromType @e Proxy :: e1)
---------------------------------------------------------------------------------
-
--- Tuples
-
---------------------------------------------------------------------------------
+instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol )where
+    fromType _ = fromString $ TL.symbolVal (Proxy @s)
 
 #if __GLASGOW_HASKELL__ >= 902
-
--- Text
-
--- instance (KnownVal (sym :: Symbol) String) => KnownVal ('FTxt.Text sym) Txt.Text
---   where
---     fromType _ = Txt.pack $ fromType @sym Proxy
-
 
 -- | Text instance.
 --
 -- === __Example__
 --
+-- >>> import qualified Data.Text as Txt
 -- >>> :{
 -- afun :: forall r. (r ~ 'FTxt.Text "hmm") => Txt.Text
 -- afun = fromType @r Proxy
@@ -329,14 +110,86 @@ instance (KnownVal a a1, KnownVal b b1, KnownVal c c1, KnownVal d d1, KnownVal e
 --
 -- >>> afun
 -- "hmm"
-instance KnownSymbol sym => KnownVal ('FTxt.Text sym) Txt.Text
+instance (IsString str, KnownSymbol sym) => KnownVal str ('FTxt.Text sym)
   where
-    fromType _ = Txt.pack $ fromType @sym Proxy
-
-
-
-#else
+    fromType _ = fromString $ fromType $ Proxy @sym 
 
 #endif
 
+--------------------------------------------------------------------------------
 
+-- List instances
+
+instance KnownVal [a] '[] where
+    fromType _ = []
+
+instance (KnownVal typ x, KnownVal [typ] xs) => KnownVal [typ] (x ': xs) where
+    fromType _ = fromType (Proxy @x) : fromType (Proxy @xs)
+
+--------------------------------------------------------------------------------
+
+-- Trees
+--
+instance (KnownVal typ k, KnownVal (T.Forest typ) trees) => KnownVal (T.Tree typ) ('FT.Node k trees)
+  where
+    fromType _ = T.Node (fromType (Proxy @k)) (fromType (Proxy @trees))
+
+--------------------------------------------------------------------------------
+
+-- NatMaps / IntMaps
+--
+instance (KnownVal [(Int,val)] pairs) => KnownVal (IMS.IntMap val) ('NM.NatMap pairs)
+  where
+    fromType _ = IMS.fromList (fromType (Proxy @pairs))
+
+--------------------------------------------------------------------------------
+
+-- Maps
+
+instance (Ord key, KnownVal [(key,val)] pairs) => KnownVal (DM.Map key val) ('MC.MapC pairs)
+  where
+    fromType _ = DM.fromList (fromType (Proxy @pairs))
+
+--------------------------------------------------------------------------------
+
+-- Set
+
+instance (Ord typ, KnownVal [typ] kind) => KnownVal (S.Set typ) ('FS.Set kind)
+  where
+    fromType _ = S.fromList (fromType (Proxy @kind))
+ 
+--------------------------------------------------------------------------------
+
+-- Either
+
+instance (KnownVal a1 a) => KnownVal (Either a1 b1) ('Left a) where
+    fromType _ = Left (fromType @a1 (Proxy @a))
+
+instance (KnownVal b1 b) => KnownVal (Either a1 b1) ('Right b) where
+    fromType _ = Right (fromType @b1 (Proxy @b))
+
+--------------------------------------------------------------------------------
+
+-- Maybe
+
+instance (KnownVal a1 a) => KnownVal (Maybe a1) ('Just a) where
+    fromType _ = Just (fromType @a1 (Proxy @a))
+
+instance KnownVal (Maybe a1) 'Nothing where
+    fromType _ = Nothing
+
+--------------------------------------------------------------------------------
+
+-- Tuples
+
+instance (KnownVal a1 a, KnownVal b1 b) => KnownVal (a1,b1) '(a,b) where
+    fromType _ = (fromType @a1 (Proxy @a), fromType @b1 (Proxy @b))
+
+instance (KnownVal a1 a, KnownVal b1 b, KnownVal c1 c) => KnownVal (a1,b1,c1) '(a,b,c) where
+    fromType _ = (fromType @a1 (Proxy @a), fromType @b1 (Proxy @b), fromType @c1 (Proxy @c))
+
+instance (KnownVal a1 a, KnownVal b1 b, KnownVal c1 c, KnownVal d1 d) => KnownVal (a1,b1,c1,d1) '(a,b,c,d) where
+    fromType _ = (fromType @a1 (Proxy @a), fromType @b1 (Proxy @b), fromType @c1 (Proxy @c), fromType @d1 (Proxy @d))
+
+instance (KnownVal a1 a, KnownVal b1 b, KnownVal c1 c, KnownVal d1 d, KnownVal e1 e) => KnownVal (a1,b1,c1,d1,e1) '(a,b,c,d,e) where
+    fromType _ = (fromType @a1 (Proxy @a), fromType @b1 (Proxy @b), fromType @c1 (Proxy @c), fromType @d1 (Proxy @d), fromType @e1 (Proxy @e))
