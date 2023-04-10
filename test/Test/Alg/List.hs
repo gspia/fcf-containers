@@ -37,6 +37,7 @@ import           Fcf.Alg.List
 import           Fcf.Alg.Morphism
 import           Fcf.Data.Reflect (fromType)
 
+--------------------------------------------------------------------------------
 
 -- This module won't compile, if the Refl doesn't give the correct answer.
 --

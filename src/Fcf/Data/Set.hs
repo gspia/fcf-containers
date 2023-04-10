@@ -73,16 +73,6 @@ import           Fcf.Alg.Morphism
 
 --------------------------------------------------------------------------------
 
--- For the doctests:
-
--- $setup
--- >>> import qualified GHC.TypeLits as TL
--- >>> import           Fcf.Data.Nat
--- >>> import           Fcf.Data.Symbol
--- >>> import           Fcf.Alg.Sort
-
---------------------------------------------------------------------------------
-
 -- | Set-definition.
 newtype Set a = Set [a]
 
@@ -93,7 +83,7 @@ newtype Set a = Set [a]
 --
 -- === __Example__
 --
--- >>> :kind! (Eval Empty :: Set Nat)
+-- > :kind! (Eval Empty :: Set Nat)
 -- (Eval Empty :: Set Nat) :: Set TL.Natural
 -- = 'Set '[]
 --
@@ -105,7 +95,7 @@ type instance Eval Empty = 'Set '[]
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Singleton 1)
+-- > :kind! Eval (Singleton 1)
 -- Eval (Singleton 1) :: Set TL.Natural
 -- = 'Set '[1]
 data Singleton :: v -> Exp (Set v)
@@ -116,11 +106,11 @@ type instance Eval (Singleton v) = 'Set '[v]
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Insert 3 =<< FromList '[1, 2])
+-- > :kind! Eval (Insert 3 =<< FromList '[1, 2])
 -- Eval (Insert 3 =<< FromList '[1, 2]) :: Set TL.Natural
 -- = 'Set '[3, 1, 2]
 --
--- >>> :kind! Eval (Insert 2 =<< FromList '[1, 2])
+-- > :kind! Eval (Insert 2 =<< FromList '[1, 2])
 -- Eval (Insert 2 =<< FromList '[1, 2]) :: Set TL.Natural
 -- = 'Set '[1, 2]
 data Insert :: v -> Set v -> Exp (Set v)
@@ -133,11 +123,11 @@ type instance Eval (Insert v ('Set lst)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Delete 5 =<< FromList '[5, 3])
+-- > :kind! Eval (Delete 5 =<< FromList '[5, 3])
 -- Eval (Delete 5 =<< FromList '[5, 3]) :: Set TL.Natural
 -- = 'Set '[3]
 --
--- >>> :kind! Eval (Delete 7 =<< FromList '[5, 3])
+-- > :kind! Eval (Delete 7 =<< FromList '[5, 3])
 -- Eval (Delete 7 =<< FromList '[5, 3]) :: Set TL.Natural
 -- = 'Set '[5, 3]
 data Delete :: v -> Set v -> Exp (Set v)
@@ -148,10 +138,11 @@ type instance Eval (Delete v ('Set lst)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Member 5 =<< FromList '[5, 3])
+-- > :kind! Eval (Member 5 =<< FromList '[5, 3])
 -- Eval (Member 5 =<< FromList '[5, 3]) :: Bool
 -- = 'True
--- >>> :kind! Eval (Member 7 =<< FromList '[5, 3])
+--
+-- > :kind! Eval (Member 7 =<< FromList '[5, 3])
 -- Eval (Member 7 =<< FromList '[5, 3]) :: Bool
 -- = 'False
 data Member :: v -> Set v -> Exp Bool
@@ -161,10 +152,11 @@ type instance Eval (Member v ('Set lst)) = Eval (Elem v lst)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (NotMember 5 =<< FromList '[5, 3])
+-- > :kind! Eval (NotMember 5 =<< FromList '[5, 3])
 -- Eval (NotMember 5 =<< FromList '[5, 3]) :: Bool
 -- = 'False
--- >>> :kind! Eval (NotMember 7 =<< FromList '[5, 3])
+--
+-- > :kind! Eval (NotMember 7 =<< FromList '[5, 3])
 -- Eval (NotMember 7 =<< FromList '[5, 3]) :: Bool
 -- = 'True
 data NotMember :: v -> Set v -> Exp Bool
@@ -176,10 +168,11 @@ type instance Eval (NotMember k ('Set lst)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Null =<< FromList '[5, 3])
+-- > :kind! Eval (Null =<< FromList '[5, 3])
 -- Eval (Null =<< FromList '[5, 3]) :: Bool
 -- = 'False
--- >>> :kind! Eval (Null =<< Empty)
+-- 
+-- > :kind! Eval (Null =<< Empty)
 -- Eval (Null =<< Empty) :: Bool
 -- = 'True
 data Null :: Set v -> Exp Bool
@@ -191,7 +184,7 @@ type instance Eval (Null ('Set (_ ': _))) = 'False
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Size =<< FromList '[5, 3])
+-- > :kind! Eval (Size =<< FromList '[5, 3])
 -- Eval (Size =<< FromList '[5, 3]) :: TL.Natural
 -- = 2
 data Size :: Set v -> Exp TL.Nat
@@ -202,19 +195,19 @@ type instance Eval (Size ('Set lst)) = Eval (Length lst)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4]))
 -- Eval (IsSubsetOf ('Set '[]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (IsSubsetOf ('Set '[0,1]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsSubsetOf ('Set '[0,1]) ('Set '[0,1,2,3,4]))
 -- Eval (IsSubsetOf ('Set '[0,1]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (IsSubsetOf ('Set '[0,2,1,3,4]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsSubsetOf ('Set '[0,2,1,3,4]) ('Set '[0,1,2,3,4]))
 -- Eval (IsSubsetOf ('Set '[0,2,1,3,4]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (IsSubsetOf ('Set '[0,1,2,3,4,5]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsSubsetOf ('Set '[0,1,2,3,4,5]) ('Set '[0,1,2,3,4]))
 -- Eval (IsSubsetOf ('Set '[0,1,2,3,4,5]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'False
 data IsSubsetOf :: Set a -> Set a -> Exp Bool
@@ -226,11 +219,11 @@ type instance Eval (IsSubsetOf ('Set s1) ('Set s2)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4]))
 -- Eval (IsProperSubsetOf ('Set '[0,1,2,3,4]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (IsProperSubsetOf ('Set '[0,2,1,3]) ('Set '[0,1,2,3,4]))
+-- > :kind! Eval (IsProperSubsetOf ('Set '[0,2,1,3]) ('Set '[0,1,2,3,4]))
 -- Eval (IsProperSubsetOf ('Set '[0,2,1,3]) ('Set '[0,1,2,3,4])) :: Bool
 -- = 'True
 data IsProperSubsetOf :: Set a -> Set a -> Exp Bool
@@ -244,7 +237,7 @@ type instance Eval (IsProperSubsetOf ('Set s1) ('Set s2)) = Eval
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) )
+-- > :kind! Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) )
 -- Eval (Union (Eval (FromList '[5, 3])) (Eval (FromList '[5, 7])) ) :: Set
 --                                                                        TL.Natural
 -- = 'Set '[7, 5, 3]
@@ -263,7 +256,7 @@ type instance Eval (UComb v lst) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
+-- > :kind! Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
 -- Eval (Difference (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7]))) :: Set
 --                                                                            TL.Natural
 -- = 'Set '[3]
@@ -280,7 +273,7 @@ type instance Eval (DiffNotMem lst v) = Eval (Not =<< Elem v lst)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Intersection (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
+-- > :kind! Eval (Intersection (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7])))
 -- Eval (Intersection (Eval (FromList '[3, 5])) (Eval (FromList '[5, 7]))) :: Set
 --                                                                              TL.Natural
 -- = 'Set '[5]
@@ -333,7 +326,7 @@ type instance Eval (SelectWithBools elms bls) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (PowerSet =<< FromList '["a", "b", "c"])
+-- > :kind! Eval (PowerSet =<< FromList '["a", "b", "c"])
 -- Eval (PowerSet =<< FromList '["a", "b", "c"]) :: Set
 --                                                    (Set TL.Symbol)
 -- = 'Set
@@ -341,7 +334,7 @@ type instance Eval (SelectWithBools elms bls) =
 --        'Set '["a"], 'Set '["a", "b"], 'Set '["a", "c"],
 --        'Set '["a", "b", "c"]]
 --
--- >>> :kind! Eval (PowerSet =<< FromList '[Int, Char, Maybe Int])
+-- > :kind! Eval (PowerSet =<< FromList '[Int, Char, Maybe Int])
 -- Eval (PowerSet =<< FromList '[Int, Char, Maybe Int]) :: Set
 --                                                           (Set (*))
 -- = 'Set
@@ -361,7 +354,7 @@ type instance Eval (PowerSet ('Set lst)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (FromList '[1, 2])
+-- > :kind! Eval (FromList '[1, 2])
 -- Eval (FromList '[1, 2]) :: Set TL.Natural
 -- = 'Set '[1, 2]
 data FromList :: [v] -> Exp (Set v)
@@ -371,15 +364,14 @@ type instance Eval (FromList lst) = 'Set lst
 --
 -- === __Example__
 --
--- >>> :kind! Eval (ToList =<< PowerSet =<< FromList '[1,2,3])
+-- > :kind! Eval (ToList =<< PowerSet =<< FromList '[1,2,3])
 -- Eval (ToList =<< PowerSet =<< FromList '[1,2,3]) :: [Set
 --                                                        TL.Natural]
 -- = '[ 'Set '[], 'Set '[3], 'Set '[2], 'Set '[2, 3], 'Set '[1],
 --      'Set '[1, 2], 'Set '[1, 3], 'Set '[1, 2, 3]]
 --
--- >>> :kind! Eval (Qsort NatListOrd =<< Map ToList =<< ToList =<< PowerSet =<< FromList '[1,2,3])
+-- > :kind! Eval (Qsort NatListOrd =<< Map ToList =<< ToList =<< PowerSet =<< FromList '[1,2,3])
 -- Eval (Qsort NatListOrd =<< Map ToList =<< ToList =<< PowerSet =<< FromList '[1,2,3]) :: [[TL.Natural]]
 -- = '[ '[], '[1], '[1, 2], '[1, 2, 3], '[1, 3], '[2], '[2, 3], '[3]]
 data ToList :: Set v -> Exp [v]
 type instance Eval (ToList ('Set lst)) = lst
-
