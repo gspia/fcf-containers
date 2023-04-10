@@ -40,6 +40,16 @@ spec = describe "Reflect" $ do
   specStructures
   specTrees
   
+specBool :: Spec
+specBool = describe "Bool" $ do
+  it "Bool, True" $ do
+    let test :: forall r. (r ~ 'True) => Bool
+        test = fromType (Proxy @r)
+    test `shouldBe` True
+  it "Bool, False" $ do
+    let test :: forall r. (r ~ 'False) => Bool
+        test = fromType (Proxy @r)
+    test `shouldBe` False
 
 specMaybe :: Spec
 specMaybe = describe "Maybe" $ do

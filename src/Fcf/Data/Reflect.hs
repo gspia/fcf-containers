@@ -93,6 +93,9 @@ class KnownVal val kind where
 instance (KnownNat n, Num a) => KnownVal a (n :: Nat) where
     fromType _ = fromInteger $ TL.natVal (Proxy @n)
 
+instance KnownVal Bool 'True where fromType _ = True
+instance KnownVal Bool 'False where fromType _ = False
+
 instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol )where
     fromType _ = fromString $ TL.symbolVal (Proxy @s)
 
