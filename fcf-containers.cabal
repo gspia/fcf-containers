@@ -15,7 +15,7 @@ License:             BSD-3-Clause
 License-file:        LICENSE
 Category:            Other
 Copyright:           gspia (c) 2020-
-Extra-source-files:  README.md, TODO.md, CHANGELOG.md, default.nix, shell.nix
+Extra-source-files:  README.md, TODO.md, CHANGELOG.md, default.nix, flake.nix, flake.lock
 Tested-With:         GHC ==9.2.4 || ==9.0.2 || ==8.10.7
 
 
