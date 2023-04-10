@@ -40,3 +40,20 @@ import           Fcf (Eval, Exp)
 -- = '(2, 1)
 data Swap :: (a, b) -> Exp (b, a)
 type instance Eval (Swap '(a,b)) = '(b,a)
+
+-- | 2-tuple to allow for partial application of 2-tuple at the type level
+data Tuple2 :: a -> b -> Exp (a, b)
+type instance Eval (Tuple2 a b) = '(a,b)
+
+-- | 3-tuple to allow for partial application of 3-tuple at the type level
+data Tuple3 :: a -> b -> c -> Exp (a, b, c)
+type instance Eval (Tuple3 a b c) = '(a,b,c)
+
+-- | 4-tuple to allow for partial application of 4-tuple at the type level
+data Tuple4 :: a -> b -> c -> d -> Exp (a, b, c, d)
+type instance Eval (Tuple4 a b c d) = '(a,b,c,d)
+
+-- | 5-tuple to allow for partial application of 4-tuple at the type level
+data Tuple5 :: a -> b -> c -> d -> e -> Exp (a, b, c, d, e)
+type instance Eval (Tuple5 a b c d e) = '(a,b,c,d,e)
+

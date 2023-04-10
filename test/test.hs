@@ -1,34 +1,31 @@
 {-# LANGUAGE
     DataKinds,
     KindSignatures,
+    TypeFamilies,
+    UndecidableInstances,
     TypeOperators #-}
 
 --------------------------------------------------------------------------------
 
 import           Data.Type.Equality ((:~:)(Refl))
-import           GHC.TypeLits (Nat)
-import           Fcf
+import           GHC.TypeLits (Nat, Symbol)
+import           Fcf hiding (type (<*>))
 
 --------------------------------------------------------------------------------
 
 import           Fcf.Data.Set
+import           Fcf.Control.Monad
+import           Fcf.Data.Tuple
+import           Fcf.Class.Monoid
+import           Fcf.Data.List
 
 --------------------------------------------------------------------------------
 
-import           Test.Data (tests)
-
-
-
--- Compile-time tests
-
-_ = Refl :: Eval (ToList =<< PowerSet  =<< FromList '[1,2])
-        :~: '[ 'Set '[], 'Set '[2], 'Set '[1], 'Set '[1,2]]
-
--- Dummy
+import           Test.Data as D (spec)
+import           Test.Control as C (spec)
+import           Test.Hspec (hspec, parallel)
 
 main :: IO ()
-main = 
-  if tests 
-    then pure ()
-    else error "Tests not ok."
-
+main = hspec $ parallel $ do
+  D.spec
+  C.spec

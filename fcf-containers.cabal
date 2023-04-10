@@ -97,10 +97,15 @@ test-suite fcf-test
   default-language:    Haskell2010
   other-modules:       Test.Data
                      , Test.Data.Reflect
+                     , Test.Data.Set
+                     , Test.Control
+                     , Test.Control.Monad
   build-depends:
       base
     , first-class-families
     , fcf-containers
+    , hspec
+    , mtl
     , containers
     , text
 
