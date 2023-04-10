@@ -19,6 +19,8 @@ Type-level 'ListF' to be used with Cata, Ana and Hylo.
 This module also contains other list-related functions (that might move to
 other place some day).
 
+To see examples, please do take a look of the respective test module.
+
 -}
 
 --------------------------------------------------------------------------------
@@ -36,13 +38,6 @@ import           Fcf.Utils (If, TyEq)
 import           Fcf.Data.Nat
 
 import           Fcf.Alg.Morphism
-
---------------------------------------------------------------------------------
-
--- For the doctests:
-
--- $setup
--- >>> import           Fcf.Combinators
 
 --------------------------------------------------------------------------------
 
@@ -65,7 +60,7 @@ type instance Eval (FMap f ('ConsF a b)) = 'ConsF a (Eval (f b))
 --
 -- === __Example__
 --
--- >>> :kind! Eval (ListToFix '[1,2,3])
+-- > :kind! Eval (ListToFix '[1,2,3])
 -- Eval (ListToFix '[1,2,3]) :: Fix (ListF TL.Natural)
 -- = 'Fix ('ConsF 1 ('Fix ('ConsF 2 ('Fix ('ConsF 3 ('Fix 'NilF))))))
 data ListToFix :: [a] -> Exp (Fix (ListF a))
@@ -76,7 +71,7 @@ type instance Eval (ListToFix (a ': as)) = 'Fix ('ConsF a (Eval (ListToFix as)))
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Cata LenAlg =<< ListToFix '[1,2,3])
+-- > :kind! Eval (Cata LenAlg =<< ListToFix '[1,2,3])
 -- Eval (Cata LenAlg =<< ListToFix '[1,2,3]) :: TL.Natural
 -- = 3
 data LenAlg :: Algebra (ListF a) Nat
@@ -87,7 +82,7 @@ type instance Eval (LenAlg ('ConsF a b)) = 1 TL.+ b
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Cata SumAlg =<< ListToFix '[1,2,3,4])
+-- > :kind! Eval (Cata SumAlg =<< ListToFix '[1,2,3,4])
 -- Eval (Cata SumAlg =<< ListToFix '[1,2,3,4]) :: TL.Natural
 -- = 10
 data SumAlg :: Algebra (ListF Nat) Nat
@@ -98,7 +93,7 @@ type instance Eval (SumAlg ('ConsF a b)) = a TL.+ b
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Cata ProdAlg =<< ListToFix '[1,2,3,4])
+-- > :kind! Eval (Cata ProdAlg =<< ListToFix '[1,2,3,4])
 -- Eval (Cata ProdAlg =<< ListToFix '[1,2,3,4]) :: TL.Natural
 -- = 24
 data ProdAlg :: Algebra (ListF Nat) Nat
@@ -111,7 +106,7 @@ type instance Eval (ProdAlg ('ConsF a b)) = a TL.* b
 --
 -- === __Example__
 --
--- >>> :kind! Eval (ListToParaFix '[1,2,3])
+-- > :kind! Eval (ListToParaFix '[1,2,3])
 -- Eval (ListToParaFix '[1,2,3]) :: Fix
 --                                    (ListF (TL.Natural, [TL.Natural]))
 -- = 'Fix
@@ -129,7 +124,7 @@ type instance Eval (ListToParaFix (a ': as)) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Para DedupAlg =<< ListToParaFix '[1,1,3,2,5,1,3,2])
+-- > :kind! Eval (Para DedupAlg =<< ListToParaFix '[1,1,3,2,5,1,3,2])
 -- Eval (Para DedupAlg =<< ListToParaFix '[1,1,3,2,5,1,3,2]) :: [TL.Natural]
 -- = '[5, 1, 3, 2]
 data DedupAlg :: RAlgebra (ListF (a,[a])) [a]
@@ -145,7 +140,7 @@ type instance Eval (DedupAlg ('ConsF '(a,as) '(_fxs, past))) = Eval
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Sliding 3 '[1,2,3,4,5,6])
+-- > :kind! Eval (Sliding 3 '[1,2,3,4,5,6])
 -- Eval (Sliding 3 '[1,2,3,4,5,6]) :: [[TL.Natural]]
 -- = '[ '[1, 2, 3], '[2, 3, 4], '[3, 4, 5], '[4, 5, 6], '[5, 6], '[6]]
 data Sliding :: Nat -> [a] -> Exp [[a]]
@@ -177,7 +172,7 @@ type instance Eval (EvensAlg ('ConsF _ rst )) = Eval (EvensStrip =<< Strip rst)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Evens =<< RunInc 8)
+-- > :kind! Eval (Evens =<< RunInc 8)
 -- Eval (Evens =<< RunInc 8) :: [TL.Natural]
 -- = '[2, 4, 6, 8]
 data Evens :: [a] -> Exp [a]
@@ -199,7 +194,7 @@ type instance Eval (ListRunAlg s) = Eval (NumIter s s )
 --
 -- === __Example__
 --
--- >>> :kind! Eval (RunInc 8)
+-- > :kind! Eval (RunInc 8)
 -- Eval (RunInc 8) :: [TL.Natural]
 -- = '[1, 2, 3, 4, 5, 6, 7, 8]
 data RunInc :: Nat -> Exp [Nat]
@@ -212,7 +207,7 @@ type instance Eval (RunInc n) = Eval (Reverse =<< Unfoldr ListRunAlg n)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Sum '[1,2,3])
+-- > :kind! Eval (Sum '[1,2,3])
 -- Eval (Sum '[1,2,3]) :: TL.Natural
 -- = 6
 data Sum :: [Nat] -> Exp Nat
@@ -233,7 +228,7 @@ type instance Eval (MToNHelp n b) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (MToN 1 3)
+-- > :kind! Eval (MToN 1 3)
 -- Eval (MToN 1 3) :: [TL.Natural]
 -- = '[1, 2, 3]
 data MToN :: Nat -> Nat -> Exp [Nat]
@@ -245,7 +240,7 @@ type instance Eval (MToN m n) = Eval (Unfoldr (MToNHelp n) m)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (ToList 1)
+-- > :kind! Eval (ToList 1)
 -- Eval (ToList 1) :: [TL.Natural]
 -- = '[1]
 data ToList :: a -> Exp [a]
@@ -256,13 +251,12 @@ type instance Eval (ToList a) = '[a]
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Equal '[1,2,3] '[1,2,3])
+-- > :kind! Eval (Equal '[1,2,3] '[1,2,3])
 -- Eval (Equal '[1,2,3] '[1,2,3]) :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (Equal '[1,2,3] '[1,3,2])
+-- > :kind! Eval (Equal '[1,2,3] '[1,3,2])
 -- Eval (Equal '[1,2,3] '[1,3,2]) :: Bool
 -- = 'False
 data Equal :: [a] -> [a] -> Exp Bool
 type instance Eval (Equal as bs) = Eval (And =<< ZipWith TyEq as bs)
-
