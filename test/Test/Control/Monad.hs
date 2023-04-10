@@ -130,4 +130,4 @@ spec = describe "Monad" $ do
         test = fromType (Proxy @r)
     test 
       `shouldBe` 
-      (Just 5 >> Just "hello world")
+      (Just (5 :: Int) >> Just "hello world")
