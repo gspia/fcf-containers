@@ -64,6 +64,10 @@ package has almost as good number of dependencies as the first-class-families.
 
 ## Example
 
+The  
+[test directory](https://github.com/gspia/fcf-containers/blob/master/test)
+contains a lot of useful examples.
+
 See [Orbits.hs](https://github.com/gspia/fcf-containers/blob/master/examples/Orbits.hs). 
 It shows how to solve a real problem,
 what PRAGMAs are probably needed etc.
@@ -174,6 +178,7 @@ The `ghci` and `:kind!` command are your friends!
 
 Source also contains a lot of examples, see
 [fcf-containers](https://github.com/gspia/fcf-containers/tree/master/src/Fcf).
-
+The examples will be left near the code, even thou the doctest runs will be 
+removed and replaced with real tests at the test-directory.
 
 Happy :kinding!

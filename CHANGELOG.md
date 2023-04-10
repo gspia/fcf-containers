@@ -1,4 +1,19 @@
 
+# 0.8.1
+
+20230410
+
+Thank you to Skyfold (Martin P.)
+
+- Generalized KnownVal instances
+- Initialized the HSpec use and test directory organization
+- Added flake definitions
+- Updated stack version (not tested with stack)
+- Removed shell.nix
+- Fcf.Data.Set doctests removed and replaced with Test.Data.Set
+- Fcf.Alg.List doctests removed and replaced with Test.Alg.List
+
+
 # 0.8.0
 
 20230226
