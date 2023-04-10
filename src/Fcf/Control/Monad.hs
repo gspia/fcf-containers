@@ -22,7 +22,7 @@ Maintainer  : gspia
 
 module Fcf.Control.Monad where
 
-import           Control.Monad.Identity
+import           Data.Functor.Identity
 import           GHC.TypeNats as TN
 
 import           Fcf hiding (type (<*>))

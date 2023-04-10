@@ -12,6 +12,7 @@
 
 module Test.Control.Monad where
 
+import           Data.Functor ((<&>))
 import           Data.Proxy
 import           Control.Applicative
 import           Test.Hspec (describe, it, shouldBe, Spec)
@@ -49,7 +50,9 @@ spec = describe "Monad" $ do
         test = fromType (Proxy @r)
     test 
       `shouldBe` 
-      (("age",5) >>= return . (+) 1)
+      (("age",5) <&> (+) 1)
+      -- Above was suggested by hlint for the following:
+      -- (("age",5) >>= return . (+) 1)
   it "liftA3 (,,) instance" $ do
     let test :: forall r. (r ~ Eval (LiftA3 Tuple3 '("hello ", "<", 6) '("world", " ", 8) '("!", ">", 10))) => (String, String, (Int, Int, Int))
         test = fromType (Proxy @r)
@@ -118,16 +121,20 @@ spec = describe "Monad" $ do
         test = fromType (Proxy @r)
     test 
       `shouldBe` 
-      (Just "hello" >>= (return . flip (<>) " world"))
+      (Just "hello" <&> flip (<>) " world")
+      -- Above was suggested by hlint for the following:
+      -- (Just "hello" >>= (return . flip (<>) " world"))
   it ">>= Maybe instance test Nothing" $ do
     let test :: forall r. (r ~ Eval ('Nothing >>= (Return <=< Flip (.<>) " world"))) => Maybe String
         test = fromType (Proxy @r)
     test 
       `shouldBe` 
-      (Nothing >>= (return . flip (<>) " world"))
+      (Nothing <&> flip (<>) " world")
+      -- Above was suggested by hlint for the following:
+      -- (Nothing >>= (return . flip (<>) " world"))
   it ">> Maybe instance" $ do
     let test :: forall r. (r ~ Eval ('Just 5 >> 'Just "hello world")) => Maybe String
         test = fromType (Proxy @r)
     test 
       `shouldBe` 
-      (Just 5 >> Just "hello world")
+      (Just (5 :: Int) >> Just "hello world")
