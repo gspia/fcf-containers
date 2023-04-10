@@ -7,7 +7,7 @@ Description:
     contents of containers-package and show how these can be used. Everything is
     based on the ideas given in the first-class-families -package.
 Homepage:            https://github.com/gspia/fcf-containers
-Version:             0.8.0
+Version:             0.8.1
 Build-type:          Simple
 Author:              gspia
 Maintainer:          iahogsp@gmail.com
@@ -104,7 +104,6 @@ test-suite fcf-test
     , first-class-families
     , fcf-containers
     , hspec
-    , mtl
     , containers
     , text
 
