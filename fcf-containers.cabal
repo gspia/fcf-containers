@@ -96,6 +96,7 @@ test-suite fcf-test
   default-language:    Haskell2010
   other-modules:       Test.Alg
                      , Test.Alg.List
+                     , Test.Alg.Morphism
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set

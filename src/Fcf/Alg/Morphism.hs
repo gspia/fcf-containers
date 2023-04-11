@@ -32,15 +32,6 @@ import           Fcf
 
 --------------------------------------------------------------------------------
 
--- For the doctests:
-
--- $setup
--- >>> import qualified GHC.TypeLits as TL
--- >>> import           Fcf.Alg.List
--- >>> import           Fcf.Data.Nat
-
---------------------------------------------------------------------------------
-
 -- | Structure that 'Cata' can fold and that is a result structure of 'Ana'.
 newtype Fix f = Fix (f (Fix f))
 
@@ -68,15 +59,15 @@ type instance Eval (Cata alg ('Fix b)) = alg @@ Eval (Map (Cata alg) b)
 --
 -- === __Example__
 --
--- >>> data NToOneCoA :: CoAlgebra (ListF Nat) Nat
--- >>> :{
+-- > data NToOneCoA :: CoAlgebra (ListF Nat) Nat
+-- > :{
 --   type instance Eval (NToOneCoA b) =
 --     If (Eval (b < 1) )
 --         'NilF
 --         ('ConsF b ( b TL.- 1))
 -- :}
 --
--- >>> :kind! Eval (Ana NToOneCoA 3)
+-- > :kind! Eval (Ana NToOneCoA 3)
 -- Eval (Ana NToOneCoA 3) :: Fix (ListF TL.Natural)
 -- = 'Fix ('ConsF 3 ('Fix ('ConsF 2 ('Fix ('ConsF 1 ('Fix 'NilF))))))
 data Ana :: CoAlgebra f a -> a -> Exp (Fix f)
@@ -89,15 +80,15 @@ type instance Eval (Ana coalg a) = 'Fix (Eval (Map (Ana coalg) (Eval (coalg a)))
 --
 -- === __Example__
 --
--- >>> data NToOneCoA :: CoAlgebra (ListF Nat) Nat
--- >>> :{
+-- > data NToOneCoA :: CoAlgebra (ListF Nat) Nat
+-- > :{
 --   type instance Eval (NToOneCoA b) =
 --     If (Eval (b < 1) )
 --         'NilF
 --         ('ConsF b ( b TL.- 1))
 -- :}
 --
--- >>> :kind! Eval (Hylo SumAlg NToOneCoA 5)
+-- > :kind! Eval (Hylo SumAlg NToOneCoA 5)
 -- Eval (Hylo SumAlg NToOneCoA 5) :: TL.Natural
 -- = 15
 data Hylo :: Algebra f a -> CoAlgebra f b -> b -> Exp a
@@ -183,7 +174,7 @@ type instance Eval (Histo alg fx) = Eval (Attr =<< Cata (HistoAlg alg) fx)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (First ((+) 1) '(3,"a"))
+-- > :kind! Eval (First ((+) 1) '(3,"a"))
 -- Eval (First ((+) 1) '(3,"a")) :: (TL.Natural, TL.Symbol)
 -- = '(4, "a")
 data First :: (a -> Exp b) -> f a c -> Exp (f b c)
@@ -199,7 +190,7 @@ type instance Eval (First f ('Right b)) = 'Right b
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Second ((+) 1) '("a",3))
+-- > :kind! Eval (Second ((+) 1) '("a",3))
 -- Eval (Second ((+) 1) '("a",3)) :: (TL.Symbol, TL.Natural)
 -- = '("a", 4)
 data Second :: (c -> Exp d) -> f a c -> Exp (f a d)
@@ -210,4 +201,3 @@ type instance Eval (Second f '(a,b)) = '(a, f @@ b)
 -- Either
 type instance Eval (Second f ('Left a)) = 'Left a
 type instance Eval (Second f ('Right b)) = 'Right (f @@ b)
-

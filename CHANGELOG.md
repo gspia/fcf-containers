@@ -1,4 +1,14 @@
 
+# 0.8.2
+
+Thank you again to Skyfold (Martin P.)
+
+- Add KnownVal instance for typeable types, this can be used as Show for
+  the types presented at the kind level. 
+- Fix the Test.Alg test description
+- Add Test.Alg.Morphism and corresponding doctests removed
+
+
 # 0.8.1
 
 20230410
