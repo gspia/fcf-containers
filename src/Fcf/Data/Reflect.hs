@@ -31,6 +31,8 @@ import qualified GHC.TypeLits as TL
 import           GHC.TypeLits (Nat, Symbol, KnownNat, KnownSymbol)
 import           Data.String (fromString, IsString)
 import           Data.Proxy
+import           Data.Typeable (Typeable, typeRep)
+import           Data.Kind (Type)
 -- import qualified Data.Map.Strict as MS
 import qualified Data.Map as DM
 import qualified Data.IntMap.Strict as IMS
@@ -96,8 +98,11 @@ instance (KnownNat n, Num a) => KnownVal a (n :: Nat) where
 instance KnownVal Bool 'True where fromType _ = True
 instance KnownVal Bool 'False where fromType _ = False
 
-instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol )where
+instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol) where
     fromType _ = fromString $ TL.symbolVal (Proxy @s)
+
+instance (IsString str, Typeable typ) => KnownVal str (typ :: Type) where
+    fromType = fromString . show . typeRep
 
 #if __GLASGOW_HASKELL__ >= 902
 
