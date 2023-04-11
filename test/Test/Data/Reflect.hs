@@ -19,6 +19,7 @@ import qualified Data.Text as DTxt
 #endif
 import           Data.Proxy
 import           Test.Hspec (describe, it, shouldBe, Spec)
+import           Data.Kind (Type)
 
 import           Fcf (Eval, type (=<<))
 import qualified Fcf.Data.Set as FS
@@ -39,6 +40,7 @@ spec = describe "Reflect" $ do
   specMaybeEither
   specStructures
   specTrees
+  specShowTypeable
   
 specBool :: Spec
 specBool = describe "Bool" $ do
@@ -254,3 +256,19 @@ specTrees = describe "Tree structures" $ do
           [DT.Node (Right "six") []
           ]
         ]
+
+data Test = Test Type Type
+
+specShowTypeable :: Spec
+specShowTypeable = describe "Show Type represented at the Kind level" $ do
+  it "Show Int" $ do
+    fromType @String (Proxy @Int)
+      `shouldBe`
+      "Int"
+  it "Show Set of Types" $ do
+    let test :: forall r. (r ~ Eval (FS.FromList '[Int, Maybe String, (), [Integer], IO ()])) 
+             => DS.Set String
+        test = fromType (Proxy @r)
+    test 
+      `shouldBe` 
+      DS.fromList ["Int", "Maybe [Char]", "()", "[Integer]", "IO ()"]
