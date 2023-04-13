@@ -17,6 +17,7 @@ import qualified Data.Tree as DT
 #if __GLASGOW_HASKELL__ >= 902
 import qualified Data.Text as DTxt
 #endif
+import qualified GHC.TypeLits as TL
 import           Data.Proxy
 import           Test.Hspec (describe, it, shouldBe, Spec)
 
@@ -34,12 +35,13 @@ import           Fcf.Data.Reflect
 
 spec :: Spec
 spec = describe "Reflect" $ do
+  specTrees
   specMaybe
   specEither
   specMaybeEither
   specStructures
-  specTrees
   specShowTypeable
+  specErrorMessage
   
 specBool :: Spec
 specBool = describe "Bool" $ do
@@ -124,31 +126,67 @@ specMaybeEither = describe "Maybe Either and Either Maybe" $ do
 
 specStructures :: Spec
 specStructures = describe "Maps and other structures" $ do
-  it "NatMap" $ do
-    let test :: forall r. (r ~ Eval (
-                  FNM.Insert 3 "hih" =<< FNM.FromList '[ '(1,"haa"), '(2,"hoo")]
-                )) 
-             => IM.IntMap String
-        test = fromType (Proxy @r)
-    test 
-      `shouldBe` 
-      IM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
-  it "Map" $ do
-    let test :: forall r. (r ~ Eval (
-                  FNMC.Insert 3 "hih" =<< FNMC.FromList '[ '(1,"haa"), '(2,"hoo")]
-                )) 
-             => DM.Map Int String
-        test = fromType (Proxy @r)
-    test 
-      `shouldBe` 
-      DM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
-  it "Set" $ do
-    let test :: forall r. (r ~ Eval (FS.FromList '[5, 9, 1, 8, 3, 5])) 
-             => DS.Set Int
-        test = fromType (Proxy @r)
-    test 
-      `shouldBe` 
-      DS.fromList [1, 3, 5, 8, 9]
+  describe "[]" $ do
+    it "[]" $ do
+      let test :: forall r. (r ~ '[]) => [()]
+          test = fromType (Proxy @r)
+      test `shouldBe` []
+    it "[(Bool,Int)]" $ do
+      let test :: forall r. (r ~ '[ '( 'True,5), '( 'False,6)]) => [(Bool,Int)]
+          test = fromType (Proxy @r)
+      test `shouldBe` [(True,5),(False,6)]
+  describe "IntMap" $ do
+    it "IntMap char, from '[ '(Nat,Char) ]" $ do
+      let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(3,'b'), '(4,'l'), '(3,'l')]) => IM.IntMap Char
+          test = fromType (Proxy @r)
+      test `shouldBe` IM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
+    it "IntMap String, from NatMap" $ do
+      let test :: forall r. (r ~ Eval (FNM.FromList '[ '(1,"H"), '(4,"b"), '(2,"e"), '(5,"o"), '(4,"l"), '(3,"l")])) => IM.IntMap String
+          test = fromType (Proxy @r)
+      test `shouldBe` IM.fromList [(2,"e"),(1,"H"),(4,"l"),(3,"l"),(5,"o")]
+    it "IntMap String, with insert" $ do
+      let test :: forall r. (r ~ Eval (
+                    FNM.Insert 3 "hih" =<< FNM.FromList '[ '(1,"haa"), '(2,"hoo")]
+                  )) 
+              => IM.IntMap String
+          test = fromType (Proxy @r)
+      test 
+        `shouldBe` 
+        IM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
+  describe "Map" $ do
+    it "Map Int char, from '[ '(Nat,Char) ]" $ do
+      let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(4,'l'), '(3,'b'), '(3,'l')]) => DM.Map Int Char
+          test = fromType (Proxy @r)
+      test `shouldBe` DM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
+    it "Map Int String, from MapC" $ do
+      let test :: forall r. (r ~ Eval (FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
+          test = fromType (Proxy @r)
+      test `shouldBe` DM.fromList [(2,"e"),(1,"H"),(4,"l"),(3,"l"),(5,"o")]
+    it "Map Int String, with insert" $ do
+      let test :: forall r. (r ~ Eval (
+                    FNMC.Insert 3 "hih" =<< FNMC.FromList '[ '(1,"haa"), '(2,"hoo")]
+                  )) 
+              => DM.Map Int String
+          test = fromType (Proxy @r)
+      test 
+        `shouldBe` 
+        DM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
+  describe "Set" $ do
+    it "Set char, from '[Char]" $ do
+      let test :: forall r. (r ~ '[ 'H','e','o','l','l' ]) => DS.Set Char
+          test = fromType (Proxy @r)
+      test `shouldBe` DS.fromList ['H','e','o','l','l']
+    it "Set String, from Set" $ do
+      let test :: forall r. (r ~ Eval (FS.FromList '["H","e","o","l","l"])) => DS.Set String
+          test = fromType (Proxy @r)
+      test `shouldBe` DS.fromList ["e","H","l","l","o"]
+    it "Set Int" $ do
+      let test :: forall r. (r ~ Eval (FS.FromList '[5, 9, 1, 8, 3, 5])) 
+              => DS.Set Int
+          test = fromType (Proxy @r)
+      test 
+        `shouldBe` 
+        DS.fromList [1, 3, 5, 8, 9]
 #if __GLASGOW_HASKELL__ >= 902
   it "text" $ do
     let test :: forall r. (r ~ 'FTxt.Text "trial") => DTxt.Text
@@ -269,3 +307,18 @@ specShowTypeable = describe "Show Type represented at the Kind level" $ do
     test 
       `shouldBe` 
       DS.fromList ["Int", "Maybe [Char]", "()", "[Integer]", "IO ()"]
+
+specErrorMessage :: Spec
+specErrorMessage = describe "show GHC.TypeLits.ErrorMessage" $ do
+  it "text error" $ do
+    (fromType @DTxt.Text $ Proxy @('TL.Text "I am error"))
+      `shouldBe`
+      DTxt.pack "I am error"
+  it "ShowType 'True" $ do
+    (fromType @DTxt.Text $ Proxy @('TL.ShowType '()))
+      `shouldBe`
+      DTxt.pack "'()"
+  it "with Kinds" $ do
+    (fromType @DTxt.Text $ Proxy @('TL.Text "Kind: " 'TL.:<>: 'TL.ShowType 'True 'TL.:$$: 'TL.Text "Type: " 'TL.:<>: 'TL.ShowType Bool))
+      `shouldBe`
+      DTxt.pack "Kind: 'True\nType: Bool"
