@@ -73,8 +73,10 @@ instance KnownVal () '() where fromType _ = ()
 instance (IsString str, KnownSymbol s) => KnownVal str (s :: Symbol) where
     fromType _ = fromString $ TL.symbolVal (Proxy @s)
 
+#if __GLASGOW_HASKELL__ >= 920
 instance (TL.KnownChar c) => KnownVal Char c where
     fromType _ = TL.charVal (Proxy @c)
+#endif
 
 instance (IsString str, Typeable typ) => KnownVal str (typ :: Type) where
     fromType = fromString . show . typeRep

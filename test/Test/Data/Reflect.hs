@@ -14,9 +14,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Map as DM
 import qualified Data.Set as DS
 import qualified Data.Tree as DT
-#if __GLASGOW_HASKELL__ >= 902
 import qualified Data.Text as DTxt
-#endif
 import qualified GHC.TypeLits as TL
 import           Data.Proxy
 import           Test.Hspec (describe, it, shouldBe, Spec)
@@ -136,10 +134,12 @@ specStructures = describe "Maps and other structures" $ do
           test = fromType (Proxy @r)
       test `shouldBe` [(True,5),(False,6)]
   describe "IntMap" $ do
+#if __GLASGOW_HASKELL__ >= 920
     it "IntMap char, from '[ '(Nat,Char) ]" $ do
       let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(3,'b'), '(4,'l'), '(3,'l')]) => IM.IntMap Char
           test = fromType (Proxy @r)
       test `shouldBe` IM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
+#endif
     it "IntMap String, from NatMap" $ do
       let test :: forall r. (r ~ Eval (FNM.FromList '[ '(1,"H"), '(4,"b"), '(2,"e"), '(5,"o"), '(4,"l"), '(3,"l")])) => IM.IntMap String
           test = fromType (Proxy @r)
@@ -154,10 +154,12 @@ specStructures = describe "Maps and other structures" $ do
         `shouldBe` 
         IM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
   describe "Map" $ do
+#if __GLASGOW_HASKELL__ >= 920
     it "Map Int char, from '[ '(Nat,Char) ]" $ do
       let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(4,'l'), '(3,'b'), '(3,'l')]) => DM.Map Int Char
           test = fromType (Proxy @r)
       test `shouldBe` DM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
+#endif
     it "Map Int String, from MapC" $ do
       let test :: forall r. (r ~ Eval (FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
           test = fromType (Proxy @r)
@@ -172,10 +174,12 @@ specStructures = describe "Maps and other structures" $ do
         `shouldBe` 
         DM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
   describe "Set" $ do
+#if __GLASGOW_HASKELL__ >= 920
     it "Set char, from '[Char]" $ do
       let test :: forall r. (r ~ '[ 'H','e','o','l','l' ]) => DS.Set Char
           test = fromType (Proxy @r)
       test `shouldBe` DS.fromList ['H','e','o','l','l']
+#endif
     it "Set String, from Set" $ do
       let test :: forall r. (r ~ Eval (FS.FromList '["H","e","o","l","l"])) => DS.Set String
           test = fromType (Proxy @r)
