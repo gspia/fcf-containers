@@ -8,7 +8,7 @@
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
 
 {- 
-In this module, we test mainly Fcf.Alg.List module. In couple of 
+In this module, we test mainly Fcf.Alg.Morphism module. In couple of 
 places, we use the "spec" and Reflect. 
 
 Many of the tests are such that if the answer is not correct, the
