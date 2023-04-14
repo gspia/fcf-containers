@@ -101,6 +101,7 @@ test-suite fcf-test
                      , Test.Alg.Other
                      , Test.Alg.Sort
                      , Test.Alg.Symbol
+                     , Test.Alg.Tree
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
@@ -113,6 +114,8 @@ test-suite fcf-test
     , hspec
     , containers
     , text
+--  ghc-options:
+--      -freduction-depth=0
 
 test-suite fcf-doctest
   type:                exitcode-stdio-1.0

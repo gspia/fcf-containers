@@ -7,6 +7,7 @@ import           Test.Alg.Nat      as N (spec)
 import           Test.Alg.Other    as O (spec)
 import           Test.Alg.Sort     as So (spec)
 import           Test.Alg.Symbol   as Sy (spec)
+import           Test.Alg.Tree     as T (spec)
 import           Test.Hspec (describe, Spec)
 
 spec :: Spec
@@ -17,4 +18,5 @@ spec = describe "Alg" $ do
   O.spec
   So.spec
   Sy.spec
+  T.spec
 
