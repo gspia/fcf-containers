@@ -3,10 +3,15 @@
 
 Thank you again to Skyfold (Martin P.)
 
+- Deprecation warning for the KnownNats class and its instances: the KnownVal
+  can be used instead.
+- Instances to IntMap, Map and Set to convert directly from '[a] or '[ '(key,val) ]
+- The ErrorMessage instance for KnownVal to show information about types 
 - Add KnownVal instance for typeable types, this can be used as Show for
   the types presented at the kind level. 
 - Fix the Test.Alg test description
 - Add Test.Alg.Morphism and corresponding doctests removed
+- Some cleaning
 
 
 # 0.8.1
