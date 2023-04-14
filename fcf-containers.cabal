@@ -97,6 +97,7 @@ test-suite fcf-test
   other-modules:       Test.Alg
                      , Test.Alg.List
                      , Test.Alg.Morphism
+                     , Test.Alg.Nat
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
