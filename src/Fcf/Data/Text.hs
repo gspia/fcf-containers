@@ -28,6 +28,7 @@ and definitions for better Text type, which will be taken into use after some ti
 --------------------------------------------------------------------------------
 
 module Fcf.Data.Text
+    {-# WARNING "This still uses the OldText implementaion, which will be replaced with NewText implementation." #-}
     ( Text (..)
 
     -- * Creation

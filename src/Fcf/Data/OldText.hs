@@ -25,6 +25,7 @@ widespread.
 --------------------------------------------------------------------------------
 
 module Fcf.Data.OldText
+    {-# DEPRECATED "Use Fcf.Data.NewText instead" #-}
     ( Text (..)
 
     -- * Creation
