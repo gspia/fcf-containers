@@ -60,6 +60,37 @@ import qualified Fcf.Data.Tree as FT
 
 --------------------------------------------------------------------------------
 
+
+-- | Reflect a list of Nats
+--
+-- Note that you may also use the KnownVal methods given below.
+--
+-- This method is taken from
+-- https://hackage.haskell.org/package/numhask-array-0.10.1/docs/src/NumHask.Array.Shape.html#natVals
+--
+-- === __Example__
+--
+-- >>> :{
+-- afun :: forall n. (n ~ '[1,2,3,4]) => [Int]
+-- afun = natVals @n Proxy
+-- :}
+--
+-- >>> afun
+-- [1,2,3,4]
+class KnownNats (ns :: [Nat]) where
+  natVals :: Proxy ns -> [Int]
+
+{-# DEPRECATED KnownNats "Replaced with KnownVal" #-}
+
+instance KnownNats '[] where
+  natVals _ = []
+
+instance (TL.KnownNat n, KnownNats ns) => KnownNats (n : ns) where
+  natVals _ = fromInteger (TL.natVal (Proxy @n)) : natVals (Proxy @ns)
+
+
+--------------------------------------------------------------------------------
+
 class KnownVal val kind where
     fromType :: Proxy kind -> val
 
