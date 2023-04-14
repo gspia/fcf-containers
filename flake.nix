@@ -13,6 +13,8 @@
       # filter = import nix-filter { };
 
       ghcVersion = "925";
+      # ghcVersion = "92";
+      # ghcVersion = "902";
 
       src = nix-filter.lib {
         root = ./.;
@@ -65,5 +67,6 @@
         library = fcf-containers;
         # packages.x86_64-linux.default = ;
         devShell.x86_64-linux = shell;
+        inherit pkgs;
       };
 }
