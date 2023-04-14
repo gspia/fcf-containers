@@ -12,6 +12,7 @@ Thank you again to Skyfold (Martin P.)
 - Fix the Test.Alg test description
 - Add Test.Alg.Morphism and corresponding doctests removed
 - Some cleaning
+- Add depracation and warning pragmas to text modules.
 
 
 # 0.8.1

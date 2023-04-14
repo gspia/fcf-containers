@@ -64,7 +64,7 @@ import qualified Fcf.Data.Tree as FT
 -- afun = natVals @n Proxy
 -- :}
 --
--- >>> afun
+-- > afun
 -- [1,2,3,4]
 class KnownNats (ns :: [Nat]) where
   natVals :: Proxy ns -> [Int]
@@ -107,13 +107,13 @@ instance (IsString str, Typeable typ) => KnownVal str (typ :: Type) where
 --
 -- === __Example__
 --
--- >>> import qualified Data.Text as Txt
--- >>> :{
+-- > import qualified Data.Text as Txt
+-- > :{
 -- afun :: forall r. (r ~ 'FTxt.Text "hmm") => Txt.Text
 -- afun = fromType (Proxy @r)
 -- :}
 --
--- >>> afun
+-- > afun
 -- "hmm"
 instance (IsString str, KnownSymbol sym) => KnownVal str ('FTxt.Text sym)
   where
