@@ -99,6 +99,7 @@ test-suite fcf-test
                      , Test.Alg.Morphism
                      , Test.Alg.Nat
                      , Test.Alg.Other
+                     , Test.Alg.Sort
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
