@@ -98,6 +98,7 @@ test-suite fcf-test
                      , Test.Alg.List
                      , Test.Alg.Morphism
                      , Test.Alg.Nat
+                     , Test.Alg.Other
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
