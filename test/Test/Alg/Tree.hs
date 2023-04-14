@@ -36,7 +36,6 @@ import           Test.Hspec (describe, it, shouldBe, Spec)
 
 import           Fcf.Data.Nat
 
-import           Fcf.Alg.List
 import           Fcf.Alg.Morphism 
 import           Fcf.Alg.Tree
 import           Fcf.Combinators (type (=<<))
