@@ -10,7 +10,7 @@ Thank you again to Skyfold (Martin P.)
 - Add KnownVal instance for typeable types, this can be used as Show for
   the types presented at the kind level. 
 - Fix the Test.Alg test description
-- Add Test.Alg.Morphism and corresponding doctests removed
+- Remove doc-tests from all Fcf.Alg modules and write the corresponding test modules
 - Some cleaning
 - Add depracation and warning pragmas to text modules.
 
