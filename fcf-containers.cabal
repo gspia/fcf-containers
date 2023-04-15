@@ -7,7 +7,7 @@ Description:
     contents of containers-package and show how these can be used. Everything is
     based on the ideas given in the first-class-families -package.
 Homepage:            https://github.com/gspia/fcf-containers
-Version:             0.8.1
+Version:             0.8.2
 Build-type:          Simple
 Author:              gspia
 Maintainer:          iahogsp@gmail.com
@@ -96,11 +96,17 @@ test-suite fcf-test
   default-language:    Haskell2010
   other-modules:       Test.Alg
                      , Test.Alg.List
+                     , Test.Alg.Morphism
+                     , Test.Alg.Nat
+                     , Test.Alg.Other
+                     , Test.Alg.Sort
+                     , Test.Alg.Symbol
+                     , Test.Alg.Tree
+                     , Test.Control
+                     , Test.Control.Monad
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
-                     , Test.Control
-                     , Test.Control.Monad
   build-depends:
       base
     , first-class-families
@@ -108,6 +114,8 @@ test-suite fcf-test
     , hspec
     , containers
     , text
+--  ghc-options:
+--      -freduction-depth=0
 
 test-suite fcf-doctest
   type:                exitcode-stdio-1.0

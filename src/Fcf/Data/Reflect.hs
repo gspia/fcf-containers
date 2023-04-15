@@ -33,7 +33,6 @@ import           Data.String (fromString, IsString)
 import           Data.Proxy
 import           Data.Typeable (Typeable, typeRep)
 import           Data.Kind (Type)
--- import qualified Data.Map.Strict as MS
 import qualified Data.Map as DM
 import qualified Data.IntMap.Strict as IMS
 import qualified Data.Set as S
@@ -41,7 +40,6 @@ import qualified Data.Set as S
 -- #endif
 import qualified Data.Tree as T
 
--- import qualified Fcf.Core as C (Eval)
 import qualified Fcf.Data.MapC as MC
 import qualified Fcf.Data.NatMap as NM
 import qualified Fcf.Data.Set as FS
@@ -52,15 +50,6 @@ import qualified Fcf.Data.Tree as FT
 
 --------------------------------------------------------------------------------
 
--- For the doctests:
-
--- $setup
--- >>> import qualified GHC.TypeLits as TL
--- >>> import           Fcf.Data.Nat
-
---------------------------------------------------------------------------------
-
-
 -- | Reflect a list of Nats
 --
 -- Note that you may also use the KnownVal methods given below.
@@ -70,12 +59,12 @@ import qualified Fcf.Data.Tree as FT
 --
 -- === __Example__
 --
--- >>> :{
+-- > :{
 -- afun :: forall n. (n ~ '[1,2,3,4]) => [Int]
 -- afun = natVals @n Proxy
 -- :}
 --
--- >>> afun
+-- > afun
 -- [1,2,3,4]
 class KnownNats (ns :: [Nat]) where
   natVals :: Proxy ns -> [Int]
@@ -118,13 +107,13 @@ instance (IsString str, Typeable typ) => KnownVal str (typ :: Type) where
 --
 -- === __Example__
 --
--- >>> import qualified Data.Text as Txt
--- >>> :{
+-- > import qualified Data.Text as Txt
+-- > :{
 -- afun :: forall r. (r ~ 'FTxt.Text "hmm") => Txt.Text
 -- afun = fromType (Proxy @r)
 -- :}
 --
--- >>> afun
+-- > afun
 -- "hmm"
 instance (IsString str, KnownSymbol sym) => KnownVal str ('FTxt.Text sym)
   where

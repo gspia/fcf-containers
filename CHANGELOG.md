@@ -1,4 +1,20 @@
 
+# 0.8.2
+
+Thank you again to Skyfold (Martin P.)
+
+- Deprecation warning for the KnownNats class and its instances: the KnownVal
+  can be used instead.
+- Instances to IntMap, Map and Set to convert directly from '[a] or '[ '(key,val) ]
+- The ErrorMessage instance for KnownVal to show information about types 
+- Add KnownVal instance for typeable types, this can be used as Show for
+  the types presented at the kind level. 
+- Fix the Test.Alg test description
+- Remove doc-tests from all Fcf.Alg modules and write the corresponding test modules
+- Some cleaning
+- Add depracation and warning pragmas to text modules.
+
+
 # 0.8.1
 
 20230410

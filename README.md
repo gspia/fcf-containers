@@ -56,7 +56,11 @@ cabal build
 cabal test 
 ```
 
-The doc-tests both document and work as main testing mechanism for this lib. 
+If you are flakes user, `nix develop -c zsh` (or without that `-c zsh`) works as well.
+
+The doc-tests both document and work partly as testing mechanism for this lib. Please 
+do note that we are moving away from the doc-tests and building the testing modules 
+under `test` directory.
 
 If you don't use nix, `cabal install fcf-containers` should be enough. This
 package has almost as good number of dependencies as the first-class-families.
@@ -64,9 +68,25 @@ package has almost as good number of dependencies as the first-class-families.
 
 ## Example
 
+
+### Test cases as examples
+
 The  
 [test directory](https://github.com/gspia/fcf-containers/blob/master/test)
-contains a lot of useful examples.
+contains a lot of useful examples.  There you will find out, how to apply most
+of the methods: examples that only work on "compile time", and examples on how
+to get the results from type level calculations to value level (see the Reflect
+test module and the `fromType` method applications, also in some other testing
+modules).
+
+
+### Three example programs calculating something
+
+These are a bit larger examples, but not yet too large: somewhat convenient small 
+module size.  Idea was to take an algorithm, and convert it to a type-level 
+computation, or in some other way give an example of methods that this library
+provides.
+
 
 See [Orbits.hs](https://github.com/gspia/fcf-containers/blob/master/examples/Orbits.hs). 
 It shows how to solve a real problem,
@@ -76,12 +96,18 @@ what PRAGMAs are probably needed etc.
 cabal run orbits 
 ```
 
-There is also another example that show how to use MapC, see
+There is also another Advent of Code problem, see the Carbcombat file.
+
+
+To see, how to use MapC, take a look at
 [Haiku.hs](https://github.com/gspia/fcf-containers/blob/master/examples/Haiku.hs)
 
 ```
 cabal run haiku 
 ```
+
+
+### Other example material
 
 Please, do take a look of the notes made for the Helsinki Haskell meetup
 on 11th January 2023

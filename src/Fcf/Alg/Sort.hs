@@ -36,14 +36,6 @@ import           Fcf.Alg.Symbol (SymbolOrd)
 
 --------------------------------------------------------------------------------
 
--- For the doctests:
-
--- $setup
--- >>> import qualified Fcf.Data.Nat as N ( type (<) )
--- >>> import qualified Fcf.Alg.Symbol as S ( type (<) )
-
---------------------------------------------------------------------------------
-
 -- helper for the ListCmp
 data ListCmpFnd :: [Ordering] -> Exp Ordering
 type instance Eval (ListCmpFnd '[]) = 'EQ
@@ -106,11 +98,11 @@ type instance Eval (Inord ('BNodeF v l r)) = Eval (l ++ Eval ('[v] ++ r))
 --
 -- __Example__
 --
--- >>> :kind! Eval (Qsort (N.<) '[5,3,1,9,4,6,3])
+-- > :kind! Eval (Qsort (N.<) '[5,3,1,9,4,6,3])
 -- Eval (Qsort (N.<) '[5,3,1,9,4,6,3]) :: [TL.Natural]
 -- = '[1, 3, 3, 4, 5, 6, 9]
 --
--- >>> :kind! Eval (Qsort (S.<) '[ "bb", "e", "a", "e", "d" ])
+-- > :kind! Eval (Qsort (S.<) '[ "bb", "e", "a", "e", "d" ])
 -- Eval (Qsort (S.<) '[ "bb", "e", "a", "e", "d" ]) :: [Symbol]
 -- = '["a", "bb", "d", "e", "e"]
 data Qsort :: (a -> a -> Exp Bool) -> [a] -> Exp [a]
@@ -122,4 +114,3 @@ type instance Eval (Qsort cmp lst) = Eval (Hylo Inord (PartCmp cmp) lst)
 -- Nat-list. Sorting would work without PartCmp.
 data PartCmp :: (a -> a -> Exp Bool) -> CoAlgebra (BTreeF a) [a] 
 type instance Eval (PartCmp cmp coalg) = Eval (PartHlp (Flip cmp) coalg)
-

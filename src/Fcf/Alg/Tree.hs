@@ -75,15 +75,15 @@ type instance Eval (CountNodesAlg ('NodeF x (b ': bs))) = 1 TL.+ Eval (Sum (b ':
 -- Size is defined as @ Cata CountNodesAlg =<< TreeToFix tr @
 -- and can be used with the following.
 --
--- >>> data BuildNode :: Nat -> Exp (Nat,[Nat])
--- >>> :{
+-- > data BuildNode :: Nat -> Exp (Nat,[Nat])
+-- > :{
 --   type instance Eval (BuildNode x) =
 --       If (Eval ((2 TL.* x TL.+ 1) >= 8))
 --           '(x, '[])
 --           '(x, '[ 2 TL.* x, (2 TL.* x) TL.+ 1 ])
 -- :}
 --
--- >>> :kind! Eval (Size =<< UnfoldTree BuildNode 1)
+-- > :kind! Eval (Size =<< UnfoldTree BuildNode 1)
 -- Eval (Size =<< UnfoldTree BuildNode 1) :: TL.Natural
 -- = 7
 data Size :: Tree a -> Exp Nat
@@ -114,7 +114,7 @@ type instance Eval (BuildFibTreeCoA n) =
 --
 -- __Example__
 --
--- >>> :kind! Eval (FibHylo 10)
+-- > :kind! Eval (FibHylo 10)
 -- Eval (FibHylo 10) :: TL.Natural
 -- = 55
 data FibHylo :: Nat -> Exp Nat
@@ -147,7 +147,7 @@ type instance Eval (FSum ('NodeF a (b ': bs))) = Eval (Sum (b ': bs))
 --
 -- __Example__
 --
--- >>> :kind! Eval (Sizes =<< Ana BuildNodeCoA 1)
+-- > :kind! Eval (Sizes =<< Ana BuildNodeCoA 1)
 -- Eval (Sizes =<< Ana BuildNodeCoA 1) :: Fix
 --                                          (AnnF (TreeF TL.Natural) TL.Natural)
 -- = 'Fix
@@ -208,10 +208,8 @@ type instance Eval (FibAlgebra ('Succ ('Fix ('AnnF '( 'Succ ('Fix ('AnnF '( _, n
 --
 -- __Example__
 --
--- >>> :kind! Eval (FibHisto 100)
+-- > :kind! Eval (FibHisto 100)
 -- Eval (FibHisto 100) :: TL.Natural
 -- = 354224848179261915075
 data FibHisto :: Nat -> Exp Nat
 type instance Eval (FibHisto n) = Eval (Histo FibAlgebra =<< NatToFix n)
-
-

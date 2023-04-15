@@ -26,19 +26,11 @@ import           Fcf
 
 --------------------------------------------------------------------------------
 
--- For the doctests:
-
--- $setup
--- >>> import           GHC.Types
--- >>> import qualified GHC.TypeLits as TL
-
---------------------------------------------------------------------------------
-
 -- | Helper.
 --
 -- === __Example__
 --
--- >>> :kind! Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1))
+-- > :kind! Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1))
 -- Eval (PairMaybeToMaybePair '( 'Just "txt", 'Just 1)) :: Maybe
 --                                                           (Symbol, TL.Natural)
 -- = 'Just '("txt", 1)
@@ -52,9 +44,8 @@ type instance Eval (PairMaybeToMaybePair '( 'Just a, 'Just b)) = 'Just '(a,b)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Id "id")
+-- > :kind! Eval (Id "id")
 -- Eval (Id "id") :: Symbol
 -- = "id"
 data Id :: a -> Exp a
 type instance Eval (Id a) = a
-

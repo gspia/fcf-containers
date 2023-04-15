@@ -71,7 +71,7 @@ import           Fcf.Combinators (type (=<<))
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Append "hmm" " ok")
+-- > :kind! Eval (Append "hmm" " ok")
 -- Eval (Append "hmm" " ok") :: Symbol
 -- = "hmm ok"
 data Append :: Symbol -> Symbol -> Exp Symbol
@@ -82,15 +82,15 @@ type instance Eval (Append s1 s2) = TL.AppendSymbol s1 s2
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Intercalate "+" '["aa", "bb", "cc"])
+-- > :kind! Eval (Intercalate "+" '["aa", "bb", "cc"])
 -- Eval (Intercalate "+" '["aa", "bb", "cc"]) :: Symbol
 -- = "aa+bb+cc"
 --
--- >>> :kind! Eval (Intercalate "+" '["aa"])
+-- > :kind! Eval (Intercalate "+" '["aa"])
 -- Eval (Intercalate "+" '["aa"]) :: Symbol
 -- = "aa"
 --
--- >>> :kind! Eval (Intercalate "+" '[])
+-- > :kind! Eval (Intercalate "+" '[])
 -- Eval (Intercalate "+" '[]) :: Symbol
 -- = ""
 data Intercalate :: Symbol -> [Symbol] -> Exp Symbol
@@ -107,11 +107,11 @@ type instance Eval (InterCalHelp s s1 s2) = Eval (Append (Eval (Append s s1)) s2
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsSpace "a")
+-- > :kind! Eval (IsSpace "a")
 -- Eval (IsSpace "a") :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (IsSpace " ")
+-- > :kind! Eval (IsSpace " ")
 -- Eval (IsSpace " ") :: Bool
 -- = 'True
 data IsSpace :: Symbol -> Exp Bool
@@ -122,11 +122,11 @@ type instance Eval (IsSpace s) = Eval (s == " ")
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsNewLine "a")
+-- > :kind! Eval (IsNewLine "a")
 -- Eval (IsNewLine "a") :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (IsNewLine "\n")
+-- > :kind! Eval (IsNewLine "\n")
 -- Eval (IsNewLine "\n") :: Bool
 -- = 'True
 data IsNewLine :: Symbol -> Exp Bool
@@ -137,11 +137,11 @@ type instance Eval (IsNewLine s) = Eval (s == "\n")
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsTab "a")
+-- > :kind! Eval (IsTab "a")
 -- Eval (IsTab "a") :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (IsTab "\t")
+-- > :kind! Eval (IsTab "\t")
 -- Eval (IsTab "\t") :: Bool
 -- = 'True
 data IsTab :: Symbol -> Exp Bool
@@ -152,11 +152,11 @@ type instance Eval (IsTab s) = Eval (s == "\t")
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsSpaceDelim "a")
+-- > :kind! Eval (IsSpaceDelim "a")
 -- Eval (IsSpaceDelim "a") :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (IsSpaceDelim "\n")
+-- > :kind! Eval (IsSpaceDelim "\n")
 -- Eval (IsSpaceDelim "\n") :: Bool
 -- = 'True
 data IsSpaceDelim :: Symbol -> Exp Bool
@@ -168,11 +168,11 @@ type instance Eval (IsSpaceDelim s) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval (IsDigit "3")
+-- > :kind! Eval (IsDigit "3")
 -- Eval (IsDigit "3") :: Bool
 -- = 'True
 --
--- >>> :kind! Eval (IsDigit "a")
+-- > :kind! Eval (IsDigit "a")
 -- Eval (IsDigit "a") :: Bool
 -- = 'False
 data IsDigit :: Symbol -> Exp Bool
@@ -189,7 +189,7 @@ type instance Eval (IsDigit s)
 --
 -- === __Example__
 --
--- >>> :kind! Eval (SymbolOrd "a" "b")
+-- > :kind! Eval (SymbolOrd "a" "b")
 -- Eval (SymbolOrd "a" "b") :: Ordering
 -- = 'LT
 data SymbolOrd :: Symbol -> Symbol -> Exp Ordering
@@ -199,10 +199,9 @@ type instance Eval (SymbolOrd a b) = TL.CmpSymbol a b
 --
 -- === __Example__
 --
--- >>> :kind! Eval ("b" <= "a")
+-- > :kind! Eval ("b" <= "a")
 -- Eval ("b" <= "a") :: Bool
 -- = 'False
---
 data (<=) :: Symbol -> Symbol -> Exp Bool
 type instance Eval ((<=) a b) =
     Eval (Eval (TyEq (TL.CmpSymbol a b) 'LT) || Eval (TyEq (TL.CmpSymbol a b) 'EQ))
@@ -211,7 +210,7 @@ type instance Eval ((<=) a b) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval ("b" >= "a")
+-- > :kind! Eval ("b" >= "a")
 -- Eval ("b" >= "a") :: Bool
 -- = 'True
 data (>=) :: Symbol -> Symbol -> Exp Bool
@@ -222,7 +221,7 @@ type instance Eval ((>=) a b) =
 --
 -- === __Example__
 --
--- >>> :kind! Eval ("a" < "b")
+-- > :kind! Eval ("a" < "b")
 -- Eval ("a" < "b") :: Bool
 -- = 'True
 data (<) :: Symbol -> Symbol -> Exp Bool
@@ -232,7 +231,7 @@ type instance Eval ((<) a b) = Eval (TyEq (TL.CmpSymbol a b) 'LT)
 --
 -- === __Example__
 --
--- >>> :kind! Eval ("b" > "a")
+-- > :kind! Eval ("b" > "a")
 -- Eval ("b" > "a") :: Bool
 -- = 'True
 data (>) :: Symbol -> Symbol -> Exp Bool
@@ -242,7 +241,7 @@ type instance Eval ((>) a b) = Eval (TyEq (TL.CmpSymbol a b) 'GT)
 --
 -- === __Example__
 --
--- >>> :kind! Eval ("b" == "a")
+-- > :kind! Eval ("b" == "a")
 -- Eval ("b" == "a") :: Bool
 -- = 'False
 data (==) :: Symbol -> Symbol -> Exp Bool

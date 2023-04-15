@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
 
 {-|
-Module      : Fcf.Data.Text
+Module      : Fcf.Data.OldText
 Description : Type-level Text data structure with methods
 Copyright   : (c) gspia 2020-
 License     : BSD
@@ -25,6 +25,7 @@ widespread.
 --------------------------------------------------------------------------------
 
 module Fcf.Data.OldText
+    {-# DEPRECATED "Use Fcf.Data.NewText instead" #-}
     ( Text (..)
 
     -- * Creation
