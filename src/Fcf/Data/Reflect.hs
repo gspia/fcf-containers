@@ -33,7 +33,8 @@ import           Data.String (fromString, IsString)
 import           Data.Proxy
 import           Data.Typeable (Typeable, typeRep)
 import           Data.Kind (Type)
-import qualified Data.Map as DM
+import qualified Data.Map.Internal as DMI
+import qualified Data.Map.Strict as DM
 import qualified Data.IntMap.Strict as IMS
 import qualified Data.Set as S
 -- #if __GLASGOW_HASKELL__ >= 902
@@ -155,9 +156,14 @@ instance (KnownVal [(Int,val)] pairs) => KnownVal (IMS.IntMap val) (pairs :: [(N
 
 -- Maps
 
-instance (Ord key, KnownVal [(key,val)] pairs) => KnownVal (DM.Map key val) ('MC.MapC pairs)
+instance (Ord key, KnownVal Int nat, KnownVal key k, KnownVal val v, KnownVal (DM.Map key val) l, KnownVal (DM.Map key val) r) 
+         => KnownVal (DM.Map key val) ('MC.Bin nat k v l r)
   where
-    fromType _ = DM.fromList (fromType (Proxy @pairs))
+    fromType _ = DMI.Bin (fromType (Proxy @nat)) (fromType (Proxy @k)) (fromType (Proxy @v)) (fromType (Proxy @l)) (fromType (Proxy @r))
+
+instance KnownVal (DM.Map key val) 'MC.Tip
+  where
+    fromType _ = DM.empty
 
 instance (Ord key, KnownVal [(key,val)] pairs) => KnownVal (DM.Map key val) (pairs :: [(key',val')])
   where

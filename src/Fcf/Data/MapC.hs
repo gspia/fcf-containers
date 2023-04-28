@@ -1,7 +1,8 @@
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeInType             #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeFamilies             #-}
+{-# LANGUAGE TypeInType               #-}
+{-# LANGUAGE TypeOperators            #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE UndecidableInstances     #-}
 {-# OPTIONS_GHC -Wall                       #-}
 {-# OPTIONS_GHC -Werror=incomplete-patterns #-}
 
@@ -33,56 +34,64 @@ one used in the containers.
 
 module Fcf.Data.MapC
     ( -- * MapC type
-      MapC (..)
+      MapC(..)
 
     -- * Query
-    , Null
+    -- , Null
     , Size
-    , Lookup
-    , Member
-    , NotMember
-    , Disjoint
-    , Elems
-    , Keys
-    , Assocs
+    -- , Lookup
+    -- , Member
+    -- , NotMember
+    -- , Disjoint
+    -- , Elems
+    -- , Keys
+    -- , Assocs
 
-    -- * Construction
+    -- -- * Construction
     , Empty
     , Singleton
     , Insert
-    , InsertWith
-    , Delete
+    -- , InsertWith
+    -- , Delete
 
-    -- * Combine
-    , Union
-    , Difference
-    , Intersection
+    -- -- * Combine
+    -- , Union
+    -- , Difference
+    -- , Intersection
 
-    -- * Modify
-    , Adjust
-    , Map
-    , MapWithKey
-    , Foldr
-    , Filter
-    , FilterWithKey
-    , Partition
+    -- -- * Modify
+    -- , Adjust
+    -- , Map
+    -- , MapWithKey
+    -- , Foldr
+    -- , Filter
+    -- , FilterWithKey
+    -- , Partition
 
-    -- * List
+    -- -- * List
     , FromList
-    , ToList
+    -- , ToList
+    , Uncurry1
 
     )
   where
 
-import qualified GHC.TypeLits as TL
+-- import qualified GHC.TypeLits as TL
+
+import           GHC.TypeLits (TypeError, ErrorMessage(..))
 
 import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
-                     , Pure, TyEq, Length, Uncurry)
+                     , Pure, TyEq, Length, Uncurry
+                     , Case, type (-->)
+                     , Foldr)
 import qualified Fcf (Map, Foldr, Filter)
 import qualified Fcf.Data.List as L (Elem, Partition)
-
+import           Fcf.Data.Nat (type (>), type (<))
+import           GHC.TypeLits as Nat
+import qualified Fcf.Combinators as C
 import           Fcf.Alg.Morphism
+import           Fcf.Class.Ord (Compare)
 -- import qualified Fcf.Alg.List as Fcf (Partition)
 
 --------------------------------------------------------------------------------
@@ -96,6 +105,11 @@ import           Fcf.Alg.Morphism
 
 --------------------------------------------------------------------------------
 
+type Delta = 3
+type Ratio = 2
+
+--------------------------------------------------------------------------------
+
 
 -- | A type corresponding to Map in the containers. We call this MapC because
 -- name Map is reserved to the map-function in Fcf-package.
@@ -104,7 +118,8 @@ import           Fcf.Alg.Morphism
 -- that fact but rather use the exposed API. (We hope to change the
 -- internal data type to balanced tree similar to the one used in containers.
 -- See TODO.md.)
-newtype MapC k v = MapC [(k,v)]
+data MapC k v = Bin Nat k v (MapC k v) (MapC k v)
+              | Tip
 
 -- | Empty
 --
@@ -119,8 +134,9 @@ newtype MapC k v = MapC [(k,v)]
 -- = 'MapC '[]
 --
 -- See also the other examples in this module.
-data Empty :: Exp (MapC k v)
-type instance Eval Empty = 'MapC '[]
+type Empty :: MapC k v
+type Empty = 'Tip
+-- type instance Eval Empty = 'MapC '[]
 
 -- | Singleton
 --
@@ -130,7 +146,7 @@ type instance Eval Empty = 'MapC '[]
 -- Eval (Singleton 1 "haa") :: MapC TL.Natural TL.Symbol
 -- = 'MapC '[ '(1, "haa")]
 data Singleton :: k -> v -> Exp (MapC k v)
-type instance Eval (Singleton k v) = 'MapC '[ '(k,v)]
+type instance Eval (Singleton k v) = 'Bin 1 k v 'Tip 'Tip
 
 -- | Use FromList to construct a MapC from type-level list.
 --
@@ -141,7 +157,7 @@ type instance Eval (Singleton k v) = 'MapC '[ '(k,v)]
 --                                                 TL.Natural TL.Symbol
 -- = 'MapC '[ '(1, "haa"), '(2, "hoo")]
 data FromList :: [(k,v)] -> Exp (MapC k v)
-type instance Eval (FromList lst) = 'MapC lst
+type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
 
 -- | Insert
 --
@@ -152,10 +168,19 @@ type instance Eval (FromList lst) = 'MapC lst
 --                                                                    TL.Natural TL.Symbol
 -- = 'MapC '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
 data Insert :: k -> v -> MapC k v -> Exp (MapC k v)
-type instance Eval (Insert k v ('MapC lst)) =
-    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
-        ('MapC lst)
-        ('MapC ( '(k,v) ': lst))
+type instance Eval (Insert k v map) = InsertGo k v map
+
+type InsertGo :: k -> v -> MapC k v -> MapC k v
+type family InsertGo kx x map where
+  InsertGo kx x 'Tip = Eval (Singleton kx x)
+  InsertGo kx x ('Bin sz ky y l r) =
+    Case [ 'LT --> BalanceL ky y (InsertGo kx x l) r
+         , 'GT --> BalanceR ky y l (InsertGo kx x r)
+         , 'EQ --> 'Bin sz kx x l r
+         ] @@ Eval (Compare kx ky)
+
+
+--------------------------------------------------------------------------------
 
 
 -- | InsertWith
@@ -177,18 +202,18 @@ type instance Eval (Insert k v ('MapC lst)) =
 -- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: MapC
 --                                                       TL.Natural TL.Symbol
 -- = 'MapC '[ '(7, "xxx")]
-data InsertWith :: (v -> v -> Exp v) -> k -> v -> MapC k v -> Exp (MapC k v)
-type instance Eval (InsertWith f k v ('MapC lst)) =
-    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
-        ('MapC (Eval (Fcf.Map (InsWithHelp f k v) lst)))
-        ('MapC (Eval (lst ++ '[ '(k,v)])))
+-- data InsertWith :: (v -> v -> Exp v) -> k -> v -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (InsertWith f k v ('MapC lst)) =
+--     If (Eval (L.Elem k =<< Fcf.Map Fst lst))
+--         ('MapC (Eval (Fcf.Map (InsWithHelp f k v) lst)))
+--         ('MapC (Eval (lst ++ '[ '(k,v)])))
 
 -- helper
-data InsWithHelp :: (v -> v -> Exp v) -> k -> v -> (k,v) -> Exp (k,v)
-type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
-    If (Eval (TyEq k1 k2))
-        '(k1, Eval (f vNew vOld))
-        '(k2, vOld)
+-- data InsWithHelp :: (v -> v -> Exp v) -> k -> v -> (k,v) -> Exp (k,v)
+-- type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
+--     If (Eval (TyEq k1 k2))
+--         '(k1, Eval (f vNew vOld))
+--         '(k2, vOld)
 
 
 -- | Delete
@@ -208,9 +233,9 @@ type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
 -- >>> :kind! Eval (Delete 7 =<< Empty)
 -- Eval (Delete 7 =<< Empty) :: MapC TL.Natural v
 -- = 'MapC '[]
-data Delete :: k -> MapC k v -> Exp (MapC k v)
-type instance Eval (Delete k ('MapC lst)) =
-    'MapC (Eval (Fcf.Filter (Not <=< TyEq k <=< Fst) lst))
+-- data Delete :: k -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Delete k ('MapC lst)) =
+--     'MapC (Eval (Fcf.Filter (Not <=< TyEq k <=< Fst) lst))
 
 -- | Adjust
 --
@@ -230,16 +255,16 @@ type instance Eval (Delete k ('MapC lst)) =
 -- Eval (Adjust (AppendSymbol "new ") 7 =<< Empty) :: MapC
 --                                                      TL.Natural TL.Symbol
 -- = 'MapC '[]
-data Adjust :: (v -> Exp v) -> k -> MapC k v -> Exp (MapC k v)
-type instance Eval (Adjust f k ('MapC lst)) =
-    'MapC (Eval (AdjustHelp f k lst))
+-- data Adjust :: (v -> Exp v) -> k -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Adjust f k ('MapC lst)) =
+--     'MapC (Eval (AdjustHelp f k lst))
 
-data AdjustHelp :: (v -> Exp v) -> k -> [(k,v)] -> Exp [(k,v)]
-type instance Eval (AdjustHelp _f _k '[]) = '[]
-type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
-    If (Eval (TyEq k k1))
-        ('(k, f @@ v) ': Eval (AdjustHelp f k rst))
-        ('(k1,v) ': Eval (AdjustHelp f k rst))
+-- data AdjustHelp :: (v -> Exp v) -> k -> [(k,v)] -> Exp [(k,v)]
+-- type instance Eval (AdjustHelp _f _k '[]) = '[]
+-- type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
+--     If (Eval (TyEq k k1))
+--         ('(k, f @@ v) ': Eval (AdjustHelp f k rst))
+--         ('(k1,v) ': Eval (AdjustHelp f k rst))
 
 
 -- | Lookup
@@ -255,13 +280,13 @@ type instance Eval (AdjustHelp f k ( '(k1,v) ': rst)) =
 -- Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe
 --                                                          TL.Symbol
 -- = 'Nothing
-data Lookup :: k -> MapC k v -> Exp (Maybe v)
-type instance Eval (Lookup k ('MapC '[])) = 'Nothing
-type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
-     Eval (If (Eval (TyEq k k1))
-            (Pure ('Just v))
-            (Lookup k ('MapC rst))
-          )
+-- data Lookup :: k -> MapC k v -> Exp (Maybe v)
+-- type instance Eval (Lookup k ('MapC '[])) = 'Nothing
+-- type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
+--      Eval (If (Eval (TyEq k k1))
+--             (Pure ('Just v))
+--             (Lookup k ('MapC rst))
+--           )
 
 -- | Member
 --
@@ -273,9 +298,9 @@ type instance Eval (Lookup k ('MapC ('(k1,v) ': rst))) =
 -- >>> :kind! Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
-data Member :: k -> MapC k v -> Exp Bool
-type instance Eval (Member k mp) =
-    Eval (L.Elem k =<< Keys mp)
+-- data Member :: k -> MapC k v -> Exp Bool
+-- type instance Eval (Member k mp) =
+--     Eval (L.Elem k =<< Keys mp)
 
 -- | NotMember
 --
@@ -287,9 +312,9 @@ type instance Eval (Member k mp) =
 -- >>> :kind! Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
-data NotMember :: k -> MapC k v -> Exp Bool
-type instance Eval (NotMember k mp) =
-    Eval (Not =<< L.Elem k =<< Keys mp)
+-- data NotMember :: k -> MapC k v -> Exp Bool
+-- type instance Eval (NotMember k mp) =
+--     Eval (Not =<< L.Elem k =<< Keys mp)
 
 -- | Null
 --
@@ -301,9 +326,9 @@ type instance Eval (NotMember k mp) =
 -- >>> :kind! Eval (Null =<< Empty)
 -- Eval (Null =<< Empty) :: Bool
 -- = 'True
-data Null :: MapC k v -> Exp Bool
-type instance Eval (Null ('MapC '[])) = 'True
-type instance Eval (Null ('MapC (_ ': _))) = 'False
+-- data Null :: MapC k v -> Exp Bool
+-- type instance Eval (Null ('MapC '[])) = 'True
+-- type instance Eval (Null ('MapC (_ ': _))) = 'False
 
 -- | Size
 --
@@ -312,8 +337,10 @@ type instance Eval (Null ('MapC (_ ': _))) = 'False
 -- >>> :kind! Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")]) :: TL.Natural
 -- = 2
-data Size :: MapC k v -> Exp TL.Nat
-type instance Eval (Size ('MapC lst)) = Eval (Length lst)
+type Size :: MapC k v -> Nat
+type family Size map where
+  Size 'Tip = 0
+  Size ('Bin sz _ _ _ _) = sz
 
 -- | Union
 --
@@ -324,15 +351,15 @@ type instance Eval (Size ('MapC lst)) = Eval (Length lst)
 --                                                                                                      TL.Natural
 --                                                                                                      TL.Symbol
 -- = 'MapC '[ '(7, "c"), '(5, "a"), '(3, "b")]
-data Union :: MapC k v -> MapC k v -> Exp (MapC k v)
-type instance Eval (Union ('MapC lst1) ('MapC lst2)) =
-    'MapC (Eval (Fcf.Foldr UComb lst1 lst2))
+-- data Union :: MapC k v -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Union ('MapC lst1) ('MapC lst2)) =
+--     'MapC (Eval (Fcf.Foldr UComb lst1 lst2))
 
-data UComb :: (k,v) -> [(k,v)] -> Exp [(k,v)]
-type instance Eval (UComb '(k,v) lst) =
-    If (Eval (L.Elem k =<< Fcf.Map Fst lst))
-        lst
-        ('(k,v) ': lst)
+-- data UComb :: (k,v) -> [(k,v)] -> Exp [(k,v)]
+-- type instance Eval (UComb '(k,v) lst) =
+--     If (Eval (L.Elem k =<< Fcf.Map Fst lst))
+--         lst
+--         ('(k,v) ': lst)
 
 
 -- | Difference
@@ -344,14 +371,14 @@ type instance Eval (UComb '(k,v) lst) =
 --                                                                                                          TL.Natural
 --                                                                                                          TL.Symbol
 -- = 'MapC '[ '(3, "a")]
-data Difference :: MapC k v -> MapC k v -> Exp (MapC k v)
-type instance Eval (Difference mp1 mp2) =
-    Eval (FilterWithKey (DiffNotMem mp2) mp1)
+-- data Difference :: MapC k v -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Difference mp1 mp2) =
+--     Eval (FilterWithKey (DiffNotMem mp2) mp1)
 
--- helper
-data DiffNotMem :: MapC k v -> k -> v -> Exp Bool
-type instance Eval (DiffNotMem mp k _) =
-    Eval (Not =<< L.Elem k =<< Keys mp)
+-- -- helper
+-- data DiffNotMem :: MapC k v -> k -> v -> Exp Bool
+-- type instance Eval (DiffNotMem mp k _) =
+--     Eval (Not =<< L.Elem k =<< Keys mp)
 
 
 -- | Intersection
@@ -363,13 +390,13 @@ type instance Eval (DiffNotMem mp k _) =
 --                                                                                                            TL.Natural
 --                                                                                                            TL.Symbol
 -- = 'MapC '[ '(5, "b")]
-data Intersection :: MapC k v -> MapC k v -> Exp (MapC k v)
-type instance Eval (Intersection mp1 mp2) =
-    Eval (FilterWithKey (InterMem mp2) mp1)
+-- data Intersection :: MapC k v -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Intersection mp1 mp2) =
+--     Eval (FilterWithKey (InterMem mp2) mp1)
 
--- helper
-data InterMem :: MapC k v -> k -> v -> Exp Bool
-type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
+-- -- helper
+-- data InterMem :: MapC k v -> k -> v -> Exp Bool
+-- type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
 
 
 -- | Disjoint
@@ -386,9 +413,9 @@ type instance Eval (InterMem mp k _) = Eval (L.Elem k =<< Keys mp)
 -- >>> :kind! Eval (Disjoint (Eval Empty) (Eval Empty))
 -- Eval (Disjoint (Eval Empty) (Eval Empty)) :: Bool
 -- = 'True
-data Disjoint :: MapC k v -> MapC k v -> Exp Bool
-type instance Eval (Disjoint mp1 mp2) =
-    Eval (Null =<< Intersection mp1 mp2)
+-- data Disjoint :: MapC k v -> MapC k v -> Exp Bool
+-- type instance Eval (Disjoint mp1 mp2) =
+--     Eval (Null =<< Intersection mp1 mp2)
 
 
 -- | Map
@@ -400,24 +427,24 @@ type instance Eval (Disjoint mp1 mp2) =
 --                                                                                      TL.Natural
 --                                                                                      TL.Symbol
 -- = 'MapC '[ '(5, "xa"), '(3, "xb")]
-data Map :: (v -> Exp w) -> MapC k v -> Exp (MapC k w)
-type instance Eval (Map f mp) =
-    'MapC (Eval (Fcf.Map (Second f) =<< Assocs mp))
+-- data Map :: (v -> Exp w) -> MapC k v -> Exp (MapC k w)
+-- type instance Eval (Map f mp) =
+--     'MapC (Eval (Fcf.Map (Second f) =<< Assocs mp))
 
 
 -- | MapWithKey
 --
 -- === __Example__
 --
-data MapWithKey :: (k -> v -> Exp w) -> MapC k v -> Exp (MapC k w)
-type instance Eval (MapWithKey f mp) =
-    'MapC (Eval (Fcf.Map (Second (Uncurry f))
-        =<< MWKhelp
-        =<< Assocs mp))
+-- data MapWithKey :: (k -> v -> Exp w) -> MapC k v -> Exp (MapC k w)
+-- type instance Eval (MapWithKey f mp) =
+--     'MapC (Eval (Fcf.Map (Second (Uncurry f))
+--         =<< MWKhelp
+--         =<< Assocs mp))
 
-data MWKhelp :: [(k,v)] -> Exp [(k,(k,v))]
-type instance Eval (MWKhelp '[]) = '[]
-type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
+-- data MWKhelp :: [(k,v)] -> Exp [(k,(k,v))]
+-- type instance Eval (MWKhelp '[]) = '[]
+-- type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
 
 
 -- | Foldr
@@ -432,8 +459,8 @@ type instance Eval (MWKhelp ('(k,v) ': rst)) = '(k, '(k,v)) : Eval (MWKhelp rst)
 -- >>> :kind! Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
 -- Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: TL.Natural
 -- = 3
-data Foldr :: (v -> w -> Exp w) -> w -> MapC k v -> Exp w
-type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
+-- data Foldr :: (v -> w -> Exp w) -> w -> MapC k v -> Exp w
+-- type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
 
 
 -- | Elems
@@ -446,8 +473,8 @@ type instance Eval (Foldr f w mp) = Eval (Fcf.Foldr f w =<< Elems mp)
 -- >>> :kind! Eval (Elems =<< Empty)
 -- Eval (Elems =<< Empty) :: [v]
 -- = '[]
-data Elems :: MapC k v -> Exp [v]
-type instance Eval (Elems ('MapC lst)) = Eval (Fcf.Map Snd lst)
+-- data Elems :: MapC k v -> Exp [v]
+-- type instance Eval (Elems ('MapC lst)) = Eval (Fcf.Map Snd lst)
 
 -- | Keys
 --
@@ -459,8 +486,8 @@ type instance Eval (Elems ('MapC lst)) = Eval (Fcf.Map Snd lst)
 -- >>> :kind! Eval (Keys =<< Empty)
 -- Eval (Keys =<< Empty) :: [k]
 -- = '[]
-data Keys :: MapC k v -> Exp [k]
-type instance Eval (Keys ('MapC lst)) = Eval (Fcf.Map Fst lst)
+-- data Keys :: MapC k v -> Exp [k]
+-- type instance Eval (Keys ('MapC lst)) = Eval (Fcf.Map Fst lst)
 
 -- | Assocs
 --
@@ -473,8 +500,8 @@ type instance Eval (Keys ('MapC lst)) = Eval (Fcf.Map Fst lst)
 -- >>> :kind! Eval (Assocs =<< Empty)
 -- Eval (Assocs =<< Empty) :: [(k, v)]
 -- = '[]
-data Assocs :: MapC k v -> Exp [(k,v)]
-type instance Eval (Assocs ('MapC lst)) = lst
+-- data Assocs :: MapC k v -> Exp [(k,v)]
+-- type instance Eval (Assocs ('MapC lst)) = lst
 
 -- | ToList
 --
@@ -487,8 +514,8 @@ type instance Eval (Assocs ('MapC lst)) = lst
 -- >>> :kind! Eval (ToList =<< Empty)
 -- Eval (ToList =<< Empty) :: [(k, v)]
 -- = '[]
-data ToList :: MapC k v -> Exp [(k,v)]
-type instance Eval (ToList ('MapC lst)) = lst
+-- data ToList :: MapC k v -> Exp [(k,v)]
+-- type instance Eval (ToList ('MapC lst)) = lst
 
 -- | Filter
 --
@@ -498,9 +525,9 @@ type instance Eval (ToList ('MapC lst)) = lst
 -- Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: MapC
 --                                                                TL.Natural TL.Natural
 -- = 'MapC '[ '(3, 30)]
-data Filter :: (v -> Exp Bool) -> MapC k v -> Exp (MapC k v)
-type instance Eval (Filter f ('MapC lst)) =
-    'MapC (Eval (Fcf.Filter (f <=< Snd) lst))
+-- data Filter :: (v -> Exp Bool) -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (Filter f ('MapC lst)) =
+--     'MapC (Eval (Fcf.Filter (f <=< Snd) lst))
 
 -- | FilterWithKey
 --
@@ -510,9 +537,9 @@ type instance Eval (Filter f ('MapC lst)) =
 -- Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)]) :: MapC
 --                                                                TL.Natural TL.Natural
 -- = 'MapC '[ '(6, 4)]
-data FilterWithKey :: (k -> v -> Exp Bool) -> MapC k v -> Exp (MapC k v)
-type instance Eval (FilterWithKey f ('MapC lst)) =
-    'MapC (Eval (Fcf.Filter (Uncurry f) lst))
+-- data FilterWithKey :: (k -> v -> Exp Bool) -> MapC k v -> Exp (MapC k v)
+-- type instance Eval (FilterWithKey f ('MapC lst)) =
+--     'MapC (Eval (Fcf.Filter (Uncurry f) lst))
 
 -- | Partition
 --
@@ -523,10 +550,154 @@ type instance Eval (FilterWithKey f ('MapC lst)) =
 --                                                                    TL.Natural TL.Natural,
 --                                                                  MapC TL.Natural TL.Natural)
 -- = '( 'MapC '[ '(3, 30)], 'MapC '[ '(5, 50)])
-data Partition :: (v -> Exp Bool) -> MapC k v -> Exp (MapC k v, MapC k v)
-type instance Eval (Partition f ('MapC lst)) =
-    Eval (PartitionHlp (Eval (L.Partition (f <=< Snd) lst)))
+-- data Partition :: (v -> Exp Bool) -> MapC k v -> Exp (MapC k v, MapC k v)
+-- type instance Eval (Partition f ('MapC lst)) =
+--     Eval (PartitionHlp (Eval (L.Partition (f <=< Snd) lst)))
 
-data PartitionHlp :: ([(k,v)],[(k,v)]) -> Exp (MapC k v, MapC k v)
-type instance Eval (PartitionHlp '(xs,ys)) = '( 'MapC xs, 'MapC ys)
+-- data PartitionHlp :: ([(k,v)],[(k,v)]) -> Exp (MapC k v, MapC k v)
+-- type instance Eval (PartitionHlp '(xs,ys)) = '( 'MapC xs, 'MapC ys)
+
+--------------------------------------------------------------------------------
+-- Utility
+
+-- | Type level implementation of balanceR from Data.Map.Strict.Internal
+--
+-- balanceR :: k -> a -> Map k a -> Map k a -> Map k a
+-- balanceR k x l r = case l of
+--   Tip -> case r of
+--            Tip -> Bin 1 k x Tip Tip
+--            (Bin _ _ _ Tip Tip) -> Bin 2 k x Tip r
+--            (Bin _ rk rx Tip rr@(Bin _ _ _ _ _)) -> Bin 3 rk rx (Bin 1 k x Tip Tip) rr
+--            (Bin _ rk rx (Bin _ rlk rlx _ _) Tip) -> Bin 3 rlk rlx (Bin 1 k x Tip Tip) (Bin 1 rk rx Tip Tip)
+--            (Bin rs rk rx rl@(Bin rls rlk rlx rll rlr) rr@(Bin rrs _ _ _ _))
+--              | rls < ratio*rrs -> Bin (1+rs) rk rx (Bin (1+rls) k x Tip rl) rr
+--              | otherwise -> Bin (1+rs) rlk rlx (Bin (1+size rll) k x Tip rll) (Bin (1+rrs+size rlr) rk rx rlr rr)
+--
+--   (Bin ls _ _ _ _) -> case r of
+--            Tip -> Bin (1+ls) k x l Tip
+--
+--            (Bin rs rk rx rl rr)
+--               | rs > delta*ls  -> case (rl, rr) of
+--                    (Bin rls rlk rlx rll rlr, Bin rrs _ _ _ _)
+--                      | rls < ratio*rrs -> Bin (1+ls+rs) rk rx (Bin (1+ls+rls) k x l rl) rr
+--                      | otherwise -> Bin (1+ls+rs) rlk rlx (Bin (1+ls+size rll) k x l rll) (Bin (1+rrs+size rlr) rk rx rlr rr)
+--                    (_, _) -> error "Failure in Data.Map.balanceR"
+--               | otherwise -> Bin (1+ls+rs) k x l r 
+--
+type BalanceR :: 
+     k -- ^ key
+  -> a -- ^ value
+  -> MapC k a -- ^ left Map 
+  -> MapC k a -- ^ right Map
+  -> MapC k a
+type family BalanceR k x l r where
+  BalanceR k x 'Tip r = BalanceRTip k x r
+  BalanceR k x ('Bin ls lk lx ll lr) r = BalanceRBin k x ls ('Bin ls lk lx ll lr) r
+
+type BalanceRTip ::
+     k -- ^ key
+  -> a -- ^ value
+  -> MapC k a -- ^ right Map
+  -> MapC k a
+type family BalanceRTip k x r where
+  BalanceRTip k x 'Tip = 'Bin 1 k x 'Tip 'Tip
+  BalanceRTip k x ('Bin rs rk rx 'Tip 'Tip) = 'Bin 2 k x 'Tip ('Bin rs rk rx 'Tip 'Tip)
+  BalanceRTip k x ('Bin _ rk rx 'Tip ('Bin rrs rrk rrx rrl rrr)) = 'Bin 3 rk rx ('Bin 1 k x 'Tip 'Tip) ('Bin rrs rrk rrx rrl rrr)
+  BalanceRTip k x ('Bin _ rk rx ('Bin _ rlk rlx _ _) 'Tip) = 'Bin 3 rlk rlx ('Bin 1 k x 'Tip 'Tip) ('Bin 1 rk rx 'Tip 'Tip)
+  BalanceRTip k x ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
+    If (Eval (rls < (Ratio Nat.* rrs)))
+       ('Bin (1+rs) rk rx ('Bin (1+rls) k x 'Tip ('Bin rls rlk rlx rll rlr)) ('Bin rrs rrk rrx rrl rrr))
+       ('Bin (1+rs) rlk rlx ('Bin (1+Size rll) k x 'Tip rll) ('Bin (1+rrs+ Size rlr) rk rx rlr ('Bin rrs rrk rrx rrl rrr)))
+
+type BalanceRBin ::
+     k -- ^ key
+  -> a -- ^ value
+  -> Nat -- ^ left map size
+  -> MapC k a -- ^ left Map
+  -> MapC k a -- ^ right Map
+  -> MapC k a
+type family BalanceRBin k x ls l r where
+  BalanceRBin k x ls l 'Tip = 'Bin (1+ls) k x l 'Tip
+  BalanceRBin k x ls l ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
+    If (Eval (rs > (Delta Nat.* ls)))
+       (If (Eval (rls < (Ratio Nat.* rrs)))
+           ('Bin (1+ls+rs) rk rx ('Bin (1+ls+rls) k x l ('Bin rls rlk rlx rll rlr)) ('Bin rrs rrk rrx rrl rrr))
+           ('Bin (1+ls+rs) rlk rlx ('Bin (1+ls+Size rll) k x l rll) ('Bin (1+rrs+Size rlr) rk rx rlr ('Bin rrs rrk rrx rrl rrr)))
+       )
+       ('Bin (1+ls+rs) k x l ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)))
+  BalanceRBin _ _ _ _ _ = TypeError ('Text "Failure in Fcf.Data.Map.balanceRBin")
+
+
+
+-- | Type level implementation of balanceL from Data.Map.Strict.Internal
+--
+-- balanceL :: k -> a -> Map k a -> Map k a -> Map k a
+-- balanceL k x l r = case r of
+--   Tip -> case l of
+--            Tip -> Bin 1 k x Tip Tip
+--            (Bin _ _ _ Tip Tip) -> Bin 2 k x l Tip
+--            (Bin _ lk lx Tip (Bin _ lrk lrx _ _)) -> Bin 3 lrk lrx (Bin 1 lk lx Tip Tip) (Bin 1 k x Tip Tip)
+--            (Bin _ lk lx ll@(Bin _ _ _ _ _) Tip) -> Bin 3 lk lx ll (Bin 1 k x Tip Tip)
+--            (Bin ls lk lx ll@(Bin lls _ _ _ _) lr@(Bin lrs lrk lrx lrl lrr))
+--              | lrs < ratio*lls -> Bin (1+ls) lk lx ll (Bin (1+lrs) k x lr Tip)
+--              | otherwise -> Bin (1+ls) lrk lrx (Bin (1+lls+size lrl) lk lx ll lrl) (Bin (1+size lrr) k x lrr Tip)
+--
+--   (Bin rs _ _ _ _) -> case l of
+--            Tip -> Bin (1+rs) k x Tip r
+--
+--            (Bin ls lk lx ll lr)
+--               | ls > delta*rs  -> case (ll, lr) of
+--                    (Bin lls _ _ _ _, Bin lrs lrk lrx lrl lrr)
+--                      | lrs < ratio*lls -> Bin (1+ls+rs) lk lx ll (Bin (1+rs+lrs) k x lr r)
+--                      | otherwise -> Bin (1+ls+rs) lrk lrx (Bin (1+lls+size lrl) lk lx ll lrl) (Bin (1+rs+size lrr) k x lrr r)
+--                    (_, _) -> error "Failure in Data.Map.balanceL"
+--               | otherwise -> Bin (1+ls+rs) k x l r
+--
+type BalanceL :: k -> a -> MapC k a -> MapC k a -> MapC k a
+type family BalanceL k x l r where
+  BalanceL k x l 'Tip = BalanceLTip k x l
+  BalanceL k x l ('Bin rs rk rx rl rr) = BalanceLBin k x rs l ('Bin rs rk rx rl rr)
+
+-- This is the case where the right map is empty
+-- (where r = 'Tip)
+--
+type BalanceLTip :: 
+     k -- ^ key
+  -> a -- ^ value
+  -> MapC k a -- ^ left map
+  -> MapC k a
+type family BalanceLTip k x l where
+  BalanceLTip k x 'Tip = 'Bin 1 k x 'Tip 'Tip
+  BalanceLTip k x ('Bin ls lk lx 'Tip 'Tip) = 'Bin 2 k x ('Bin ls lk lx 'Tip 'Tip) 'Tip
+  BalanceLTip k x ('Bin _ lk lx 'Tip ('Bin _ lrk lrx _ _)) = 'Bin 3 lrk lrx ('Bin 1 lk lx 'Tip 'Tip) ('Bin 1 k x 'Tip 'Tip)
+  BalanceLTip k x ('Bin _ lk lx ('Bin lls llk llx lll llr) 'Tip) = 'Bin 3 lk lx ('Bin lls llk llx lll llr) ('Bin 1 k x 'Tip 'Tip)
+  BalanceLTip k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) =
+    If (Eval (lrs < (Ratio Nat.* lls)))
+       ('Bin (1+ls) lk lx ('Bin lls llk llx lll llr) ('Bin (1+lrs) k x ('Bin lrs lrk lrx lrl lrr) 'Tip))
+       ('Bin (1+ls) lrk lrx ('Bin (1 + lls + Size lrl) lk lx ('Bin lls llk llx lll llr) lrl) ('Bin (1 + Size lrr) k x lrr 'Tip))
+
+-- This is the case where the right map is not empty
+-- (where r = 'Bin ...)
+--
+type BalanceLBin :: 
+     k -- ^ key
+  -> a -- ^ value
+  -> Nat -- ^ right map size
+  -> MapC k a -- ^ left map
+  -> MapC k a -- ^ right map
+  -> MapC k a
+type family BalanceLBin k x rs l r where
+  BalanceLBin k x rs 'Tip r = 'Bin (1+rs) k x 'Tip r
+  BalanceLBin k x rs ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) r = 
+    If (Eval (ls > (Delta Nat.* rs)))
+       ( 
+         If (Eval (lrs < (Ratio Nat.* lls)))
+            ('Bin (1+ls+rs) lk lx ('Bin lls llk llx lll llr) ('Bin (1+rs+lrs) k x ('Bin lrs lrk lrx lrl lrr) r))
+            ('Bin (1+ls+rs) lrk lrx ('Bin (1+lls+Size lrl) lk lx ('Bin lls llk llx lll llr) lrl) ('Bin (1+rs+Size lrr) k x lrr r))
+       )
+       ('Bin (1+ls+rs) k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) r)
+  BalanceLBin _ _ _ _ _ = TypeError ('Text "Failure in Fcf.Data.Map.balanceLBin")
+
+data Uncurry1 :: (a -> b -> c -> Exp c) -> (a, b) -> c -> Exp c
+type instance Eval (Uncurry1 f '(x, y) c) = Eval (f x y c)
 
