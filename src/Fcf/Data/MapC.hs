@@ -159,6 +159,44 @@ type instance Eval (Singleton k v) = 'Bin 1 k v 'Tip 'Tip
 data FromList :: [(k,v)] -> Exp (MapC k v)
 type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
 
+-- fromList :: Ord k => [(k,a)] -> Map k a
+-- fromList [] = Tip
+-- fromList [(kx, x)] = x `seq` Bin 1 kx x Tip Tip
+-- fromList ((kx0, x0) : xs0) | not_ordered kx0 xs0 = x0 `seq` fromList' (Bin 1 kx0 x0 Tip Tip) xs0
+--                            | otherwise = x0 `seq` go (1::Int) (Bin 1 kx0 x0 Tip Tip) xs0
+--   where
+--     not_ordered _ [] = False
+--     not_ordered kx ((ky,_) : _) = kx >= ky
+--     {-# INLINE not_ordered #-}
+
+--     fromList' t0 xs = Foldable.foldl' ins t0 xs
+--       where ins t (k,x) = insert k x t
+
+--     go !_ t [] = t
+--     go _ t [(kx, x)] = x `seq` insertMax kx x t
+--     go s l xs@((kx, x) : xss) | not_ordered kx xss = fromList' l xs
+--                               | otherwise = case create s xss of
+--                                   (r, ys, []) -> x `seq` go (s `shiftL` 1) (link kx x l r) ys
+--                                   (r, _,  ys) -> x `seq` fromList' (link kx x l r) ys
+
+--     -- The create is returning a triple (tree, xs, ys). Both xs and ys
+--     -- represent not yet processed elements and only one of them can be nonempty.
+--     -- If ys is nonempty, the keys in ys are not ordered with respect to tree
+--     -- and must be inserted using fromList'. Otherwise the keys have been
+--     -- ordered so far.
+--     create !_ [] = (Tip, [], [])
+--     create s xs@(xp : xss)
+--       | s == 1 = case xp of (kx, x) | not_ordered kx xss -> x `seq` (Bin 1 kx x Tip Tip, [], xss)
+--                                     | otherwise -> x `seq` (Bin 1 kx x Tip Tip, xss, [])
+--       | otherwise = case create (s `shiftR` 1) xs of
+--                       res@(_, [], _) -> res
+--                       (l, [(ky, y)], zs) -> y `seq` (insertMax ky y l, [], zs)
+--                       (l, ys@((ky, y):yss), _) | not_ordered ky yss -> (l, [], ys)
+--                                                | otherwise -> case create (s `shiftR` 1) yss of
+--                                                    (r, zs, ws) -> y `seq` (link ky y l r, zs, ws)
+
+-- type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
+
 -- | Insert
 --
 -- === __Example__
@@ -558,7 +596,7 @@ type family Size map where
 -- type instance Eval (PartitionHlp '(xs,ys)) = '( 'MapC xs, 'MapC ys)
 
 --------------------------------------------------------------------------------
--- Utility
+-- Balance
 
 -- | Type level implementation of balanceR from Data.Map.Strict.Internal
 --
@@ -591,43 +629,25 @@ type BalanceR ::
   -> MapC k a -- ^ right Map
   -> MapC k a
 type family BalanceR k x l r where
-  BalanceR k x 'Tip r = BalanceRTip k x r
-  BalanceR k x ('Bin ls lk lx ll lr) r = BalanceRBin k x ls ('Bin ls lk lx ll lr) r
-
-type BalanceRTip ::
-     k -- ^ key
-  -> a -- ^ value
-  -> MapC k a -- ^ right Map
-  -> MapC k a
-type family BalanceRTip k x r where
-  BalanceRTip k x 'Tip = 'Bin 1 k x 'Tip 'Tip
-  BalanceRTip k x ('Bin rs rk rx 'Tip 'Tip) = 'Bin 2 k x 'Tip ('Bin rs rk rx 'Tip 'Tip)
-  BalanceRTip k x ('Bin _ rk rx 'Tip ('Bin rrs rrk rrx rrl rrr)) = 'Bin 3 rk rx ('Bin 1 k x 'Tip 'Tip) ('Bin rrs rrk rrx rrl rrr)
-  BalanceRTip k x ('Bin _ rk rx ('Bin _ rlk rlx _ _) 'Tip) = 'Bin 3 rlk rlx ('Bin 1 k x 'Tip 'Tip) ('Bin 1 rk rx 'Tip 'Tip)
-  BalanceRTip k x ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
+  BalanceR k x 'Tip 'Tip = 'Bin 1 k x 'Tip 'Tip
+  BalanceR k x 'Tip ('Bin rs rk rx 'Tip 'Tip) = 'Bin 2 k x 'Tip ('Bin rs rk rx 'Tip 'Tip)
+  BalanceR k x 'Tip ('Bin _ rk rx 'Tip ('Bin rrs rrk rrx rrl rrr)) = 'Bin 3 rk rx ('Bin 1 k x 'Tip 'Tip) ('Bin rrs rrk rrx rrl rrr)
+  BalanceR k x 'Tip ('Bin _ rk rx ('Bin _ rlk rlx _ _) 'Tip) = 'Bin 3 rlk rlx ('Bin 1 k x 'Tip 'Tip) ('Bin 1 rk rx 'Tip 'Tip)
+  BalanceR k x 'Tip ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
     If (Eval (rls < (Ratio Nat.* rrs)))
        ('Bin (1+rs) rk rx ('Bin (1+rls) k x 'Tip ('Bin rls rlk rlx rll rlr)) ('Bin rrs rrk rrx rrl rrr))
        ('Bin (1+rs) rlk rlx ('Bin (1+Size rll) k x 'Tip rll) ('Bin (1+rrs+ Size rlr) rk rx rlr ('Bin rrs rrk rrx rrl rrr)))
-
-type BalanceRBin ::
-     k -- ^ key
-  -> a -- ^ value
-  -> Nat -- ^ left map size
-  -> MapC k a -- ^ left Map
-  -> MapC k a -- ^ right Map
-  -> MapC k a
-type family BalanceRBin k x ls l r where
-  BalanceRBin k x ls l 'Tip = 'Bin (1+ls) k x l 'Tip
-  BalanceRBin k x ls l ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
+  BalanceR k x ('Bin ls lk lx ll lr) 'Tip = 'Bin (1+ls) k x ('Bin ls lk lx ll lr) 'Tip
+  BalanceR k x ('Bin ls lk lx ll lr) ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)) =
     If (Eval (rs > (Delta Nat.* ls)))
        (If (Eval (rls < (Ratio Nat.* rrs)))
-           ('Bin (1+ls+rs) rk rx ('Bin (1+ls+rls) k x l ('Bin rls rlk rlx rll rlr)) ('Bin rrs rrk rrx rrl rrr))
-           ('Bin (1+ls+rs) rlk rlx ('Bin (1+ls+Size rll) k x l rll) ('Bin (1+rrs+Size rlr) rk rx rlr ('Bin rrs rrk rrx rrl rrr)))
-       )
-       ('Bin (1+ls+rs) k x l ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)))
-  BalanceRBin _ _ _ _ _ = TypeError ('Text "Failure in Fcf.Data.Map.balanceRBin")
-
-
+           ('Bin (1+ls+rs) rk rx ('Bin (1+ls+rls) k x ('Bin ls lk lx ll lr) ('Bin rls rlk rlx rll rlr)) ('Bin rrs rrk rrx rrl rrr))
+           ('Bin (1+ls+rs) rlk rlx ('Bin (1+ls+Size rll) k x ('Bin ls lk lx ll lr) rll) ('Bin (1+rrs+Size rlr) rk rx rlr ('Bin rrs rrk rrx rrl rrr))))
+       ('Bin (1+ls+rs) k x ('Bin ls lk lx ll lr) ('Bin rs rk rx ('Bin rls rlk rlx rll rlr) ('Bin rrs rrk rrx rrl rrr)))
+  BalanceR k x ('Bin ls lk lx ll lr) ('Bin rs rk rx rl rr) =
+    If (Eval (rs > (Delta Nat.* ls)))
+       (TypeError ('Text "Failure in Fcf.Data.Map.balanceR"))
+       ('Bin (1+ls+rs) k x ('Bin ls lk lx ll lr) ('Bin rs rk rx rl rr))
 
 -- | Type level implementation of balanceL from Data.Map.Strict.Internal
 --
@@ -653,51 +673,36 @@ type family BalanceRBin k x ls l r where
 --                    (_, _) -> error "Failure in Data.Map.balanceL"
 --               | otherwise -> Bin (1+ls+rs) k x l r
 --
-type BalanceL :: k -> a -> MapC k a -> MapC k a -> MapC k a
-type family BalanceL k x l r where
-  BalanceL k x l 'Tip = BalanceLTip k x l
-  BalanceL k x l ('Bin rs rk rx rl rr) = BalanceLBin k x rs l ('Bin rs rk rx rl rr)
-
--- This is the case where the right map is empty
--- (where r = 'Tip)
---
-type BalanceLTip :: 
+type BalanceL ::
      k -- ^ key
   -> a -- ^ value
   -> MapC k a -- ^ left map
+  -> MapC k a -- ^ left right
   -> MapC k a
-type family BalanceLTip k x l where
-  BalanceLTip k x 'Tip = 'Bin 1 k x 'Tip 'Tip
-  BalanceLTip k x ('Bin ls lk lx 'Tip 'Tip) = 'Bin 2 k x ('Bin ls lk lx 'Tip 'Tip) 'Tip
-  BalanceLTip k x ('Bin _ lk lx 'Tip ('Bin _ lrk lrx _ _)) = 'Bin 3 lrk lrx ('Bin 1 lk lx 'Tip 'Tip) ('Bin 1 k x 'Tip 'Tip)
-  BalanceLTip k x ('Bin _ lk lx ('Bin lls llk llx lll llr) 'Tip) = 'Bin 3 lk lx ('Bin lls llk llx lll llr) ('Bin 1 k x 'Tip 'Tip)
-  BalanceLTip k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) =
+type family BalanceL k x l r where
+  BalanceL k x 'Tip 'Tip = 'Bin 1 k x 'Tip 'Tip
+  BalanceL k x ('Bin ls lk lx 'Tip 'Tip) 'Tip = 'Bin 2 k x ('Bin ls lk lx 'Tip 'Tip) 'Tip
+  BalanceL k x ('Bin _ lk lx 'Tip ('Bin _ lrk lrx _ _)) 'Tip = 'Bin 3 lrk lrx ('Bin 1 lk lx 'Tip 'Tip) ('Bin 1 k x 'Tip 'Tip)
+  BalanceL k x ('Bin _ lk lx ('Bin lls llk llx lll llr) 'Tip) 'Tip = 'Bin 3 lk lx ('Bin lls llk llx lll llr) ('Bin 1 k x 'Tip 'Tip)
+  BalanceL k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) 'Tip =
     If (Eval (lrs < (Ratio Nat.* lls)))
        ('Bin (1+ls) lk lx ('Bin lls llk llx lll llr) ('Bin (1+lrs) k x ('Bin lrs lrk lrx lrl lrr) 'Tip))
        ('Bin (1+ls) lrk lrx ('Bin (1 + lls + Size lrl) lk lx ('Bin lls llk llx lll llr) lrl) ('Bin (1 + Size lrr) k x lrr 'Tip))
-
--- This is the case where the right map is not empty
--- (where r = 'Bin ...)
---
-type BalanceLBin :: 
-     k -- ^ key
-  -> a -- ^ value
-  -> Nat -- ^ right map size
-  -> MapC k a -- ^ left map
-  -> MapC k a -- ^ right map
-  -> MapC k a
-type family BalanceLBin k x rs l r where
-  BalanceLBin k x rs 'Tip r = 'Bin (1+rs) k x 'Tip r
-  BalanceLBin k x rs ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) r = 
+  BalanceL k x 'Tip ('Bin rs rk rx rl rr) = 'Bin (1+rs) k x 'Tip ('Bin rs rk rx rl rr)
+  BalanceL k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) ('Bin rs rk rx rl rr) = 
+    If (Eval (lrs < (Ratio Nat.* lls)))
+       (If (Eval (lrs < (Ratio Nat.* lls)))
+         ('Bin (1+ls+rs) lk lx ('Bin lls llk llx lll llr) ('Bin (1+rs+lrs) k x ('Bin lrs lrk lrx lrl lrr) ('Bin rs rk rx rl rr)))
+         ('Bin (1+ls+rs) lrk lrx ('Bin (1+lls+Size lrl) lk lx ('Bin lls llk llx lll llr) lrl) ('Bin (1+rs+Size lrr) k x lrr ('Bin rs rk rx rl rr))))
+       ('Bin (1+ls+rs) k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) ('Bin rs rk rx rl rr))
+  BalanceL k x ('Bin ls lk lx ll lr) ('Bin rs rk rx rl rr) = 
     If (Eval (ls > (Delta Nat.* rs)))
-       ( 
-         If (Eval (lrs < (Ratio Nat.* lls)))
-            ('Bin (1+ls+rs) lk lx ('Bin lls llk llx lll llr) ('Bin (1+rs+lrs) k x ('Bin lrs lrk lrx lrl lrr) r))
-            ('Bin (1+ls+rs) lrk lrx ('Bin (1+lls+Size lrl) lk lx ('Bin lls llk llx lll llr) lrl) ('Bin (1+rs+Size lrr) k x lrr r))
-       )
-       ('Bin (1+ls+rs) k x ('Bin ls lk lx ('Bin lls llk llx lll llr) ('Bin lrs lrk lrx lrl lrr)) r)
-  BalanceLBin _ _ _ _ _ = TypeError ('Text "Failure in Fcf.Data.Map.balanceLBin")
+       (TypeError ('Text "Failure in Fcf.Data.Map.BalanceL"))
+       ('Bin (1+ls+rs) k x ('Bin ls lk lx ll lr) ('Bin rs rk rx rl rr))
 
 data Uncurry1 :: (a -> b -> c -> Exp c) -> (a, b) -> c -> Exp c
 type instance Eval (Uncurry1 f '(x, y) c) = Eval (f x y c)
+
+--------------------------------------------------------------------------------
+-- Balance
 

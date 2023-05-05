@@ -11,7 +11,7 @@
 module Test.Data.Reflect where
 
 import qualified Data.IntMap as IM
-import qualified Data.Map as DM
+import qualified Data.Map.Strict as DM
 import qualified Data.Set as DS
 import qualified Data.Tree as DT
 import qualified Data.Text as DTxt
@@ -134,7 +134,7 @@ specStructures = describe "Maps and other structures" $ do
           test = fromType (Proxy @r)
       test `shouldBe` [(True,5),(False,6)]
   describe "IntMap" $ do
-#if __GLASGOW_HASKELL__ >= 920
+#if __GLASGOW_HASKELL__ >= 902
     it "IntMap char, from '[ '(Nat,Char) ]" $ do
       let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(3,'b'), '(4,'l'), '(3,'l')]) => IM.IntMap Char
           test = fromType (Proxy @r)
@@ -154,27 +154,22 @@ specStructures = describe "Maps and other structures" $ do
         `shouldBe` 
         IM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
   describe "Map" $ do
-#if __GLASGOW_HASKELL__ >= 920
+#if __GLASGOW_HASKELL__ >= 902
     it "Map Int char, from '[ '(Nat,Char) ]" $ do
       let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(4,'l'), '(3,'b'), '(3,'l')]) => DM.Map Int Char
           test = fromType (Proxy @r)
       test `shouldBe` DM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
 #endif
     it "Map Int String, from MapC" $ do
-      let test :: forall r. (r ~ Eval (FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.fromList [(2,"e"),(1,"H"),(4,"l"),(3,"l"),(5,"o")]
+      fromType @(DM.Map Int String) (Proxy @(Eval (FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+        `shouldBe` 
+        DM.fromList [(1,"H"),(2,"e"),(3,"c"),(5,"o"),(4,"l"),(3,"l")]
     it "Map Int String, with insert" $ do
-      let test :: forall r. (r ~ Eval (
-                    FNMC.Insert 3 "hih" =<< FNMC.FromList '[ '(1,"haa"), '(2,"hoo")]
-                  )) 
-              => DM.Map Int String
-          test = fromType (Proxy @r)
-      test 
+      fromType (Proxy @(Eval (FNMC.Insert 3 "hih" =<< FNMC.FromList '[ '(1,"haa"), '(2,"hoo")])))
         `shouldBe` 
         DM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
   describe "Set" $ do
-#if __GLASGOW_HASKELL__ >= 920
+#if __GLASGOW_HASKELL__ >= 902
     it "Set char, from '[Char]" $ do
       let test :: forall r. (r ~ '[ 'H','e','o','l','l' ]) => DS.Set Char
           test = fromType (Proxy @r)
