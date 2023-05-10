@@ -156,34 +156,28 @@ specStructures = describe "Maps and other structures" $ do
   describe "Map" $ do
 #if __GLASGOW_HASKELL__ >= 902
     it "Map Int char, from '[ '(Nat,Char) ]" $ do
-      let test :: forall r. (r ~ '[ '(1,'H'), '(2,'e'), '(5,'o'), '(4,'l'), '(3,'b'), '(3,'l')]) => DM.Map Int Char
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
+      fromType (Proxy @'[ '(1,'H'), '(2,'e'), '(5,'o'), '(4,'l'), '(3,'b'), '(3,'l')])
+        `shouldBe` DM.fromList [(1,'H'),(2,'e'),(5,'o'),(4,'l'),(3,'l')]
 #endif
     it "Map Int String, from MapC" $ do
-      fromType @(DM.Map Int String) (Proxy @(Eval (FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+      fromType (Proxy @(FNMC.FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")]))
         `shouldBe` 
         DM.fromList [(1,"H"),(2,"e"),(3,"c"),(5,"o"),(4,"l"),(3,"l")]
     it "Map Int String, with insert" $ do
-      fromType (Proxy @(Eval (FNMC.Insert 3 "hih" =<< FNMC.FromList '[ '(1,"haa"), '(2,"hoo")])))
+      fromType (Proxy @(FNMC.Insert 3 "hih" (FNMC.FromList '[ '(1,"haa"), '(2,"hoo")])))
         `shouldBe` 
         DM.fromList [ (3, "hih"), (1, "haa"), (2, "hoo")]
   describe "Set" $ do
 #if __GLASGOW_HASKELL__ >= 902
     it "Set char, from '[Char]" $ do
-      let test :: forall r. (r ~ '[ 'H','e','o','l','l' ]) => DS.Set Char
-          test = fromType (Proxy @r)
-      test `shouldBe` DS.fromList ['H','e','o','l','l']
+      fromType (Proxy @'[ 'H','e','o','l','l' ])
+        `shouldBe` DS.fromList ['H','e','o','l','l']
 #endif
     it "Set String, from Set" $ do
-      let test :: forall r. (r ~ Eval (FS.FromList '["H","e","o","l","l"])) => DS.Set String
-          test = fromType (Proxy @r)
-      test `shouldBe` DS.fromList ["e","H","l","l","o"]
+      fromType (Proxy @(Eval (FS.FromList '["H","e","o","l","l"])))
+        `shouldBe` DS.fromList ["e","H","l","l","o"]
     it "Set Int" $ do
-      let test :: forall r. (r ~ Eval (FS.FromList '[5, 9, 1, 8, 3, 5])) 
-              => DS.Set Int
-          test = fromType (Proxy @r)
-      test 
+      fromType (Proxy @(Eval (FS.FromList '[5, 9, 1, 8, 3, 5])))
         `shouldBe` 
         DS.fromList [1, 3, 5, 8, 9]
 #if __GLASGOW_HASKELL__ >= 902

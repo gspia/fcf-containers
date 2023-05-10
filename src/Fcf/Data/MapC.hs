@@ -51,8 +51,12 @@ module Fcf.Data.MapC
     , Empty
     , Singleton
     , Insert
-    -- , InsertWith
-    -- , Delete
+    , InsertExp
+    , InsertWith
+    , InsertWithExp
+    , InsertWithKey
+    , Delete
+    , DeleteExp
 
     -- -- * Combine
     -- , Union
@@ -83,9 +87,9 @@ import           GHC.TypeLits (TypeError, ErrorMessage(..))
 import           Fcf ( Eval, Exp, Fst, Snd, type (=<<), type (<=<), type (@@)
                      , type (++), Not, If
                      , Pure, TyEq, Length, Uncurry
-                     , Case, type (-->)
-                     , Foldr)
-import qualified Fcf (Map, Foldr, Filter)
+                     , Case, type (-->), Flip)
+import           Fcf (Map, Filter)
+import           Fcf.Data.List.Utils (Foldl)
 import qualified Fcf.Data.List as L (Elem, Partition)
 import           Fcf.Data.Nat (type (>), type (<))
 import           GHC.TypeLits as Nat
@@ -145,8 +149,8 @@ type Empty = 'Tip
 -- >>> :kind! Eval (Singleton 1 "haa")
 -- Eval (Singleton 1 "haa") :: MapC TL.Natural TL.Symbol
 -- = 'MapC '[ '(1, "haa")]
-data Singleton :: k -> v -> Exp (MapC k v)
-type instance Eval (Singleton k v) = 'Bin 1 k v 'Tip 'Tip
+type Singleton :: k -> v -> MapC k v
+type Singleton k v = 'Bin 1 k v 'Tip 'Tip
 
 -- | Use FromList to construct a MapC from type-level list.
 --
@@ -156,44 +160,8 @@ type instance Eval (Singleton k v) = 'Bin 1 k v 'Tip 'Tip
 -- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC
 --                                                 TL.Natural TL.Symbol
 -- = 'MapC '[ '(1, "haa"), '(2, "hoo")]
-data FromList :: [(k,v)] -> Exp (MapC k v)
-type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
-
--- fromList :: Ord k => [(k,a)] -> Map k a
--- fromList [] = Tip
--- fromList [(kx, x)] = x `seq` Bin 1 kx x Tip Tip
--- fromList ((kx0, x0) : xs0) | not_ordered kx0 xs0 = x0 `seq` fromList' (Bin 1 kx0 x0 Tip Tip) xs0
---                            | otherwise = x0 `seq` go (1::Int) (Bin 1 kx0 x0 Tip Tip) xs0
---   where
---     not_ordered _ [] = False
---     not_ordered kx ((ky,_) : _) = kx >= ky
---     {-# INLINE not_ordered #-}
-
---     fromList' t0 xs = Foldable.foldl' ins t0 xs
---       where ins t (k,x) = insert k x t
-
---     go !_ t [] = t
---     go _ t [(kx, x)] = x `seq` insertMax kx x t
---     go s l xs@((kx, x) : xss) | not_ordered kx xss = fromList' l xs
---                               | otherwise = case create s xss of
---                                   (r, ys, []) -> x `seq` go (s `shiftL` 1) (link kx x l r) ys
---                                   (r, _,  ys) -> x `seq` fromList' (link kx x l r) ys
-
---     -- The create is returning a triple (tree, xs, ys). Both xs and ys
---     -- represent not yet processed elements and only one of them can be nonempty.
---     -- If ys is nonempty, the keys in ys are not ordered with respect to tree
---     -- and must be inserted using fromList'. Otherwise the keys have been
---     -- ordered so far.
---     create !_ [] = (Tip, [], [])
---     create s xs@(xp : xss)
---       | s == 1 = case xp of (kx, x) | not_ordered kx xss -> x `seq` (Bin 1 kx x Tip Tip, [], xss)
---                                     | otherwise -> x `seq` (Bin 1 kx x Tip Tip, xss, [])
---       | otherwise = case create (s `shiftR` 1) xs of
---                       res@(_, [], _) -> res
---                       (l, [(ky, y)], zs) -> y `seq` (insertMax ky y l, [], zs)
---                       (l, ys@((ky, y):yss), _) | not_ordered ky yss -> (l, [], ys)
---                                                | otherwise -> case create (s `shiftR` 1) yss of
---                                                    (r, zs, ws) -> y `seq` (link ky y l r, zs, ws)
+type FromList :: [(k,v)] -> MapC k v
+type FromList list = Foldl (Flip (Uncurry1 InsertExp)) Empty @@ list
 
 -- type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
 
@@ -201,19 +169,19 @@ type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (Insert 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC
+-- >>> :kind! Eval (InsertExp 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
+-- Eval (InsertExp 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC
 --                                                                    TL.Natural TL.Symbol
 -- = 'MapC '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
-data Insert :: k -> v -> MapC k v -> Exp (MapC k v)
-type instance Eval (Insert k v map) = InsertGo k v map
+data InsertExp :: k -> v -> MapC k v -> Exp (MapC k v)
+type instance Eval (InsertExp k v map) = Insert k v map
 
-type InsertGo :: k -> v -> MapC k v -> MapC k v
-type family InsertGo kx x map where
-  InsertGo kx x 'Tip = Eval (Singleton kx x)
-  InsertGo kx x ('Bin sz ky y l r) =
-    Case [ 'LT --> BalanceL ky y (InsertGo kx x l) r
-         , 'GT --> BalanceR ky y l (InsertGo kx x r)
+type Insert :: k -> v -> MapC k v -> MapC k v
+type family Insert kx x map where
+  Insert kx x 'Tip = Singleton kx x
+  Insert kx x ('Bin sz ky y l r) =
+    Case [ 'LT --> BalanceL ky y (Insert kx x l) r
+         , 'GT --> BalanceR ky y l (Insert kx x r)
          , 'EQ --> 'Bin sz kx x l r
          ] @@ Eval (Compare kx ky)
 
@@ -227,32 +195,84 @@ type family InsertGo kx x map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- >>> :kind! Eval (InsertWithExp AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
 --                                                                                 TL.Natural TL.Symbol
 -- = 'MapC '[ '(5, "xxxa"), '(3, "b")]
 --
--- >>> :kind! Eval (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
+-- >>> :kind! Eval (InsertWithExp AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
 --                                                                                 TL.Natural TL.Symbol
 -- = 'MapC '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
--- >>> :kind! Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty)
+-- >>> :kind! Eval (InsertWithExp AppendSymbol 7 "xxx" =<< Empty)
 -- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: MapC
 --                                                       TL.Natural TL.Symbol
 -- = 'MapC '[ '(7, "xxx")]
--- data InsertWith :: (v -> v -> Exp v) -> k -> v -> MapC k v -> Exp (MapC k v)
--- type instance Eval (InsertWith f k v ('MapC lst)) =
---     If (Eval (L.Elem k =<< Fcf.Map Fst lst))
---         ('MapC (Eval (Fcf.Map (InsWithHelp f k v) lst)))
---         ('MapC (Eval (lst ++ '[ '(k,v)])))
+data InsertWithExp :: (a -> a -> Exp a) -> k -> a -> MapC k a -> Exp (MapC k a)
+type instance Eval (InsertWithExp f kx x map) = InsertWith f kx x map
 
--- helper
--- data InsWithHelp :: (v -> v -> Exp v) -> k -> v -> (k,v) -> Exp (k,v)
--- type instance Eval (InsWithHelp f k1 vNew '(k2,vOld)) =
---     If (Eval (TyEq k1 k2))
---         '(k1, Eval (f vNew vOld))
---         '(k2, vOld)
+-- | /O(log n)/. Insert with a function, combining new value and old value.
+-- @'InsertWith' f key value mp@
+-- will insert the pair (key, value) into @mp@ if key does
+-- not exist in the map. If the key does exist, the function will
+-- insert the pair @(key, f new_value old_value)@.
+--
+-- === __Example__
+--
+-- >>> :kind! InsertWith AppendSymbol 5 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
+-- (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                                 TL.Natural TL.Symbol
+-- = 'MapC '[ '(5, "xxxa"), '(3, "b")]
+--
+-- >>> :kind! InsertWith AppendSymbol 7 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
+-- (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                                 TL.Natural TL.Symbol
+-- = 'MapC '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
+-- >>> :kind! InsertWith AppendSymbol 7 "xxx" Empty
+-- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: MapC
+--                                                       TL.Natural TL.Symbol
+-- = 'MapC '[ '(7, "xxx")]
+type InsertWith :: (a -> a -> Exp a) -> k -> a -> MapC k a -> MapC k a
+type family InsertWith f kx x map where
+  InsertWith _ kx x 'Tip = Singleton kx x
+  InsertWith f kx x ('Bin sy ky y l r) = 
+    Case [ 'LT --> BalanceL ky y (InsertWith f kx x l) r
+         , 'GT --> BalanceR ky y l (InsertWith f kx x r)
+         , 'EQ --> 'Bin sy kx (Eval (f y x)) l r
+         ] @@ Eval (Compare kx ky)
 
+-- | A helper function for 'unionWith'. When the key is already in
+-- the map, the key is left alone, not replaced. The combining
+-- function is flipped--it is applied to the old value and then the
+-- new value.
+type InsertWithR :: (a -> a -> Exp a) -> k -> a -> MapC k a -> MapC k a
+type family InsertWithR f kx x map where
+  InsertWithR _ kx x 'Tip = Singleton kx x
+  InsertWithR f kx x ('Bin sy ky y l r) = 
+    Case [ 'LT --> BalanceL ky y (InsertWithR f kx x l) r
+         , 'GT --> BalanceR ky y l (InsertWithR f kx x r)
+         , 'EQ --> 'Bin sy ky (Eval (f y x)) l r
+         ] @@ Eval (Compare kx ky)
+
+-- | /O(log n)/. Insert with a function, combining key, new value and old value.
+-- @'InsertWithKey' f key value mp@
+-- will insert the pair (key, value) into @mp@ if key does
+-- not exist in the map. If the key does exist, the function will
+-- insert the pair @(key,f key new_value old_value)@.
+-- Note that the key passed to f is the same key passed to 'insertWithKey'.
+--
+-- > let f key new_value old_value = (show key) ++ ":" ++ new_value ++ "|" ++ old_value
+-- > insertWithKey f 5 "xxx" (fromList [(5,"a"), (3,"b")]) == fromList [(3, "b"), (5, "5:xxx|a")]
+-- > insertWithKey f 7 "xxx" (fromList [(5,"a"), (3,"b")]) == fromList [(3, "b"), (5, "a"), (7, "xxx")]
+-- > insertWithKey f 5 "xxx" empty                         == singleton 5 "xxx"
+type InsertWithKey :: (k -> a -> a -> a) -> k -> a -> MapC k a -> MapC k a
+type family InsertWithKey f kx x map where
+  InsertWithKey _ kx x 'Tip = Singleton kx x
+  InsertWithKey f kx x ('Bin sy ky y l r) =
+        Case '[ 'LT --> BalanceL ky y (InsertWithKey f kx x l) r
+              , 'GT --> BalanceR ky y l (InsertWithKey f kx x r)
+              , 'EQ --> 'Bin sy kx (f kx x y) l r
+              ] @@ Eval (Compare kx ky)
 
 -- | Delete
 --
@@ -274,6 +294,102 @@ type family InsertGo kx x map where
 -- data Delete :: k -> MapC k v -> Exp (MapC k v)
 -- type instance Eval (Delete k ('MapC lst)) =
 --     'MapC (Eval (Fcf.Filter (Not <=< TyEq k <=< Fst) lst))
+data DeleteExp :: k -> MapC k a -> Exp (MapC k a)
+type instance Eval (DeleteExp k map) = Delete k map
+
+type Delete :: k -> MapC k a -> MapC k a
+type family Delete k map where
+  Delete _ 'Tip = Tip
+  Delete k ('Bin sx kx x l r) =
+    Case '[ 'LT --> DeleteLTIf k ('Bin sx kx x l r) (Delete k l) l kx x r
+          , 'GT --> DeleteGTIf k ('Bin sx kx x l r) (Delete k r) l kx x r
+          , 'EQ --> Glue l r
+          ] @@ Eval (Compare k kx)
+
+-- This lets me compute 'Delete k l' once 
+type DeleteLTIf :: 
+     k -- ^ k
+  -> MapC k a -- ^ t@(Bin _ kx x l r)
+  -> MapC k a -- ^ where !l' = go k l
+  -> MapC k a -- ^ l
+  -> k -- ^ kx 
+  -> a -- ^ x
+  -> MapC k a -- ^ r
+  -> MapC k a
+type DeleteLTIf k t l' l kx x r = 
+  If (ShallowEq l' l)
+     t
+     (BalanceR kx x l' r)
+
+-- This lets me compute 'Delete k r' once 
+type DeleteGTIf ::
+     k -- ^ k
+  -> MapC k a -- ^ t@(Bin _ kx x l r)
+  -> MapC k a -- ^ where !r' = go k r
+  -> MapC k a -- ^ l
+  -> k -- ^ kx 
+  -> a -- ^ x
+  -> MapC k a -- ^ r
+  -> MapC k a
+type DeleteGTIf k t r' l kx x r =
+  If (ShallowEq r' r)
+     t
+     (BalanceL kx x l r')
+
+-- Data.Map.Strict.Internal uses 'ptrEq' which should behave the same as this
+type ShallowEq :: MapC k a -> MapC k a -> Bool
+type family ShallowEq l r where
+  ShallowEq 'Tip 'Tip = 'True
+  ShallowEq ('Bin n k v _ _) ('Bin n k v _ _) = 'True
+  ShallowEq _ _ = 'False
+
+data MinView k a = MinView k a (MapC k a)
+data MaxView k a = MaxView k a (MapC k a)
+
+type Glue :: MapC k a -> MapC k a -> MapC k a
+type family Glue l r where
+  Glue 'Tip r = r
+  Glue l 'Tip = l
+  Glue ('Bin sl kl xl ll lr) ('Bin sr kr xr rl rr) =
+    If (Eval (sl > sr))
+       (GlueLet1 ('Bin sr kr xr rl rr) (MaxViewSure kl xl ll lr))
+       (GlueLet2 ('Bin sl kl xl ll lr) (MinViewSure kr xr rl rr))
+
+type GlueLet1 :: MapC k a -> MaxView k a -> MapC k a
+type family GlueLet1 rightMap m where
+  GlueLet1 r ('MaxView km m l') = BalanceR km m l' r
+
+type GlueLet2 :: MapC k a -> MinView k a -> MapC k a
+type family GlueLet2 leftMap m where
+  GlueLet2 l ('MinView km m r') = BalanceL km m l r'
+
+type MinViewSure :: k -> a -> MapC k a -> MapC k a -> MinView k a
+type family MinViewSure k x l r where
+  MinViewSure k x 'Tip r = 'MinView k x r
+  MinViewSure k x ('Bin _ kl xl ll lr) r = MinViewSureCase k x r (MinViewSure kl xl ll lr)
+
+type MinViewSureCase :: 
+     k -- ^ k
+  -> a -- ^ x
+  -> MapC k a -- ^ r
+  -> MinView k a -- ^ go kl xl ll lr
+  -> MinView k a
+type family MinViewSureCase k x r mv where
+  MinViewSureCase k x r ('MinView km xm l') = 'MinView km xm (BalanceR k x l' r)
+
+type MaxViewSure :: k -> a -> MapC k a -> MapC k a -> MaxView k a
+type family MaxViewSure k x l r where
+  MaxViewSure k x l 'Tip = 'MaxView k x l
+  MaxViewSure k x l ('Bin _ kr xr rl rr) = MaxViewSureCase k x l (MaxViewSure kr xr rl rr)
+
+type MaxViewSureCase ::
+     k -- ^ k
+  -> a -- ^ x
+  -> MapC k a -- ^ l
+  -> MaxView k a -- ^ go kr xr rl rr
+  -> MaxView k a
+type family MaxViewSureCase k x l mv where
+  MaxViewSureCase k x l ('MaxView km xm r') = 'MaxView km xm (BalanceL k x l r')
 
 -- | Adjust
 --

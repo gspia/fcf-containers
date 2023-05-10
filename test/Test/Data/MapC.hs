@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as DM
 import           Fcf (Eval, type (=<<), type (@@), Exp)
 import qualified Fcf
 import           Fcf.Class.Monoid (type (.<>))
-import           Fcf.Data.Nat
+import           Fcf.Data.Nat (type (+))
 import           Fcf.Data.MapC
 -- import qualified Fcf.Data.Set as FS
 import           Fcf.Data.Reflect (fromType)
@@ -44,13 +44,11 @@ specQuery = describe "Query" $ do
 
   describe "Size" $ do
     it "Map with 5 elem and Nat keys" $ do
-      let test :: forall r. (r ~ Size (FromList @@ '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => Int
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.size (DM.fromList [(1,"H"),(2,"e"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
+      fromType (Proxy @(Size (FromList '[ '(1,"H"), '(2,"e"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+        `shouldBe` DM.size (DM.fromList [(1,"H"),(2,"e"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
     it "Map with 5 elem and String keys" $ do
-      let test :: forall r. (r ~ Size (FromList @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])) => Int
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.size (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
+      fromType (Proxy @(Size (FromList '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])))
+        `shouldBe` DM.size (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
 
   -- describe "Lookup" $ do
   --   it "basic test" $ do
@@ -177,47 +175,34 @@ specConstruction = describe "Construction" $ do
 
   describe "Insert" $ do
     it "basic test" $ do
-      let test :: forall r. (r ~ Insert 6 "test" @@ (FromList @@ '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.insert 6 "test" (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
+      fromType (Proxy @(Insert 6 "test" (FromList '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+        `shouldBe` DM.insert 6 "test" (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
     it "duplicate key" $ do
-      let test :: forall r. (r ~ Insert "l" 5 @@ (FromList @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])) => DM.Map String Int
-          test = fromType (Proxy @r)
-      test `shouldBe` DM.insert "l" 5 (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
+      fromType (Proxy @(Insert "l" 5 (FromList '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])))
+        `shouldBe` DM.insert "l" 5 (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
     it "multiple" $ do
-      let test :: forall r. (r ~ Fcf.Foldr (Uncurry1 Insert) Empty @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)]) 
-            => DM.Map String Int
-          test = fromType (Proxy @r)
-      test `shouldBe` foldr (uncurry DM.insert) DM.empty [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)]
+      fromType (Proxy @(Fcf.Foldr (Uncurry1 InsertExp) Empty @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)]))
+        `shouldBe` foldr (uncurry DM.insert) DM.empty [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)]
 
-  -- describe "InsertWith" $ do
-  --   it "basic test" $ do
-  --     let test :: forall r. (r ~ InsertWith (.<>) 6 "test" @@ (FromList @@ '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` DM.insertWith (<>) 6 "test" (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
-  --   it "duplicate key" $ do
-  --     let test :: forall r. (r ~ InsertWith (+) "l" 5 @@ (FromList @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])) => DM.Map String Int
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` DM.insertWith (+) "l" 5 (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
-  --   it "multiple" $ do
-  --     let test :: forall r. (r ~ Fcf.Foldr (Uncurry1 (InsertWith (+))) (Eval Empty) @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)]) 
-  --           => DM.Map String Int
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` foldr (uncurry (DM.insertWith (+))) DM.empty [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)]
+  describe "InsertWith" $ do
+    it "basic test" $ do
+      fromType (Proxy @(InsertWith (.<>) 6 "test" (FromList '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+        `shouldBe` DM.insertWith (<>) 6 "test" (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
+    it "duplicate key" $ do
+      fromType (Proxy @(InsertWith (+) "l" 5 (FromList '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])))
+        `shouldBe` DM.insertWith (+) "l" 5 (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
+    it "multiple" $ do
+      fromType (Proxy @(Fcf.Foldr (Uncurry1 (InsertWithExp (+))) Empty @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)]))
+        `shouldBe` foldr (uncurry (DM.insertWith (+))) DM.empty [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)]
 
-  -- describe "Delete" $ do
-  --   it "missing key" $ do
-  --     let test :: forall r. (r ~ Delete 6 @@ (FromList @@ '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])) => DM.Map Int String
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` DM.delete 6 (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
-  --   it "duplicate key" $ do
-  --     let test :: forall r. (r ~ Delete "l" @@ (FromList @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])) => DM.Map String Int
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` DM.delete "l" (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
-  --   it "after mutiple inserts" $ do
-  --     let test :: forall r. 
-  --           (r ~ Delete "ep" @@ (Fcf.Foldr (Uncurry1 Insert) (Eval Empty) @@ '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])) 
-  --           => DM.Map String Int
-  --         test = fromType (Proxy @r)
-  --     test `shouldBe` DM.delete "ep" (foldr (uncurry DM.insert) DM.empty [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
+  describe "Delete" $ do
+    it "missing key" $ do
+      fromType (Proxy @(Delete 6 (FromList '[ '(1,"H"), '(3,"c"), '(5,"o"), '(4,"l"), '(3,"l")])))
+        `shouldBe` DM.delete 6 (DM.fromList [(1,"H"),(3,"c"),(5,"o"),(4,"l"),(3,"l")])
+    it "duplicate key" $ do
+      fromType (Proxy @(Delete "l" (FromList '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)])))
+        `shouldBe` DM.delete "l" (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)])
+    it "after mutiple deletes" $ do
+      fromType (Proxy @(Fcf.Foldr DeleteExp (FromList '[ '("H",1), '("ep",2), '("ec",3), '("o",5), '("l",4), '("l",3)]) @@ '["o","H","l"]))
+        `shouldBe` foldr DM.delete (DM.fromList [("H",1),("ep",2),("ec",3),("o",5),("l",4),("l",3)]) ["o","H","l"]
 
