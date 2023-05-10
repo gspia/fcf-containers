@@ -103,9 +103,14 @@ import           Fcf.Class.Ord (Compare)
 -- For the doctests:
 
 -- $setup
--- >>> import           Fcf (type (>=))
+-- >>> import           Fcf (Eval)
+-- >>> import           Fcf.Class.Functor (FMap)
 -- >>> import           Fcf.Data.Nat
 -- >>> import           Fcf.Data.Symbol
+-- >>> import           Fcf.Class.Foldable (Foldr)
+-- >>> import           Fcf.Data.List.Utils (Foldl)
+-- >>> import           Fcf.Data.Common (Uncurry)
+-- >>> import           Fcf.Class.Monoid (type (.<>))
 
 --------------------------------------------------------------------------------
 
@@ -129,15 +134,16 @@ data MapC k v = Bin Nat k v (MapC k v) (MapC k v)
 --
 -- === __Example__
 --
--- >>> :kind! (Eval Empty :: MapC Nat TL.Symbol)
--- (Eval Empty :: MapC Nat TL.Symbol) :: MapC TL.Natural TL.Symbol
--- = 'MapC '[]
+-- >>> :kind! Empty :: MapC Nat Symbol
+-- Empty :: MapC Nat Symbol :: MapC Natural Symbol
+-- = 'Tip
 --
--- >>> :kind! (Eval Empty :: MapC Int String)
--- (Eval Empty :: MapC Int String) :: MapC Int [Char]
--- = 'MapC '[]
+-- >>> :kind! Empty :: MapC Int String
+-- Empty :: MapC Int String :: MapC Int [Char]
+-- = 'Tip
 --
 -- See also the other examples in this module.
+--
 type Empty :: MapC k v
 type Empty = 'Tip
 -- type instance Eval Empty = 'MapC '[]
@@ -146,33 +152,46 @@ type Empty = 'Tip
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Singleton 1 "haa")
--- Eval (Singleton 1 "haa") :: MapC TL.Natural TL.Symbol
--- = 'MapC '[ '(1, "haa")]
+-- >>> :kind! Singleton 1 "haa"
+-- Singleton 1 "haa" :: MapC Natural Symbol
+-- = 'Bin 1 1 "haa" 'Tip 'Tip
 type Singleton :: k -> v -> MapC k v
 type Singleton k v = 'Bin 1 k v 'Tip 'Tip
+
+-- | SingletonExp
+--
+-- === __Example__
+--
+-- >>> :kind! Eval (FMap (Uncurry SingletonExp) '[ '("key1", 1), '("key2", 2) ])
+-- Eval (FMap (Uncurry SingletonExp) '[ '("key1", 1), '("key2", 2) ]) :: [MapC
+--                                                                          Symbol Natural]
+-- = '[ 'Bin 1 "key1" 1 'Tip 'Tip, 'Bin 1 "key2" 2 'Tip 'Tip]
+--
+data SingletonExp :: k -> v -> Exp (MapC k v)
+type instance Eval (SingletonExp k v) = Singleton k v
 
 -- | Use FromList to construct a MapC from type-level list.
 --
 -- === __Example__
 --
--- >>> :kind! Eval (FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC
---                                                 TL.Natural TL.Symbol
--- = 'MapC '[ '(1, "haa"), '(2, "hoo")]
+-- >>> :kind! (FromList '[ '(1,"haa"), '(2,"hoo")])
+-- (FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC Natural Symbol
+-- = 'Bin 2 1 "haa" 'Tip ('Bin 1 2 "hoo" 'Tip 'Tip)
+--
 type FromList :: [(k,v)] -> MapC k v
 type FromList list = Foldl (Flip (Uncurry1 InsertExp)) Empty @@ list
-
--- type instance Eval (FromList lst) = Foldr (Uncurry1 Insert) Empty @@ lst
 
 -- | Insert
 --
 -- === __Example__
 --
--- >>> :kind! Eval (InsertExp 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")])
--- Eval (InsertExp 3 "hih" =<< FromList '[ '(1,"haa"), '(2,"hoo")]) :: MapC
---                                                                    TL.Natural TL.Symbol
--- = 'MapC '[ '(3, "hih"), '(1, "haa"), '(2, "hoo")]
+-- >>> :kind! Eval (FMap (InsertExp 3 "hih") '[FromList '[ '(1,"haa"), '(2,"hoo")], Empty])
+-- Eval (FMap (InsertExp 3 "hih") '[FromList '[ '(1,"haa"), '(2,"hoo")], Empty]) :: [MapC
+--                                                                                     Natural Symbol]
+-- = '[ 'Bin
+--        3 2 "hoo" ('Bin 1 1 "haa" 'Tip 'Tip) ('Bin 1 3 "hih" 'Tip 'Tip),
+--      'Bin 1 3 "hih" 'Tip 'Tip]
+--
 data InsertExp :: k -> v -> MapC k v -> Exp (MapC k v)
 type instance Eval (InsertExp k v map) = Insert k v map
 
@@ -190,24 +209,14 @@ type family Insert kx x map where
 
 
 -- | InsertWith
--- if old there, map
--- if no old, add
 --
 -- === __Example__
 --
--- >>> :kind! Eval (InsertWithExp AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                                                 TL.Natural TL.Symbol
--- = 'MapC '[ '(5, "xxxa"), '(3, "b")]
+-- >>> :kind! Eval (Foldr (Uncurry1 (InsertWithExp (.<>))) Empty '[ '(5,"a"), '(5,"b")])
+-- Eval (Foldr (Uncurry1 (InsertWithExp (.<>))) Empty '[ '(5,"a"), '(5,"b")]) :: MapC
+--                                                                                 Natural Symbol
+-- = 'Bin 1 5 "ba" 'Tip 'Tip
 --
--- >>> :kind! Eval (InsertWithExp AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                                                 TL.Natural TL.Symbol
--- = 'MapC '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
--- >>> :kind! Eval (InsertWithExp AppendSymbol 7 "xxx" =<< Empty)
--- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: MapC
---                                                       TL.Natural TL.Symbol
--- = 'MapC '[ '(7, "xxx")]
 data InsertWithExp :: (a -> a -> Exp a) -> k -> a -> MapC k a -> Exp (MapC k a)
 type instance Eval (InsertWithExp f kx x map) = InsertWith f kx x map
 
@@ -219,19 +228,20 @@ type instance Eval (InsertWithExp f kx x map) = InsertWith f kx x map
 --
 -- === __Example__
 --
--- >>> :kind! InsertWith AppendSymbol 5 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
--- (InsertWith AppendSymbol 5 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                                                 TL.Natural TL.Symbol
--- = 'MapC '[ '(5, "xxxa"), '(3, "b")]
+-- >>> :kind! InsertWith (.<>) 5 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
+-- InsertWith (.<>) 5 "xxx" (FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                 Natural Symbol
+-- = 'Bin 2 5 "axxx" ('Bin 1 3 "b" 'Tip 'Tip) 'Tip
 --
--- >>> :kind! InsertWith AppendSymbol 7 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
--- (InsertWith AppendSymbol 7 "xxx" =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                                                 TL.Natural TL.Symbol
--- = 'MapC '[ '(5, "a"), '(3, "b"), '(7, "xxx")]
--- >>> :kind! InsertWith AppendSymbol 7 "xxx" Empty
--- Eval (InsertWith AppendSymbol 7 "xxx" =<< Empty) :: MapC
---                                                       TL.Natural TL.Symbol
--- = 'MapC '[ '(7, "xxx")]
+-- >>> :kind! InsertWith (.<>) 7 "xxx" (FromList '[ '(5,"a"), '(3,"b")])
+-- InsertWith (.<>) 7 "xxx" (FromList '[ '(5,"a"), '(3,"b")]) :: MapC
+--                                                                 Natural Symbol
+-- = 'Bin 3 5 "a" ('Bin 1 3 "b" 'Tip 'Tip) ('Bin 1 7 "xxx" 'Tip 'Tip)
+--
+-- >>> :kind! InsertWith (.<>) 7 "xxx" Empty
+-- InsertWith (.<>) 7 "xxx" Empty :: MapC Natural Symbol
+-- = 'Bin 1 7 "xxx" 'Tip 'Tip
+--
 type InsertWith :: (a -> a -> Exp a) -> k -> a -> MapC k a -> MapC k a
 type family InsertWith f kx x map where
   InsertWith _ kx x 'Tip = Singleton kx x
@@ -274,32 +284,28 @@ type family InsertWithKey f kx x map where
               , 'EQ --> 'Bin sy kx (f kx x y) l r
               ] @@ Eval (Compare kx ky)
 
+data DeleteExp :: k -> MapC k a -> Exp (MapC k a)
+type instance Eval (DeleteExp k map) = Delete k map
+
 -- | Delete
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Delete 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                          TL.Natural TL.Symbol
--- = 'MapC '[ '(3, "b")]
+-- >>> :kind! Delete 5 (FromList '[ '(5,"a"), '(3,"b")])
+-- Delete 5 (FromList '[ '(5,"a"), '(3,"b")]) :: MapC Natural Symbol
+-- = 'Bin 1 3 "b" 'Tip 'Tip
 --
--- >>> :kind! Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Delete 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
---                                                          TL.Natural TL.Symbol
--- = 'MapC '[ '(5, "a"), '(3, "b")]
+-- >>> :kind! Delete 7 (FromList '[ '(5,"a"), '(3,"b")])
+-- Delete 7 (FromList '[ '(5,"a"), '(3,"b")]) :: MapC Natural Symbol
+-- = 'Bin 2 5 "a" ('Bin 1 3 "b" 'Tip 'Tip) 'Tip
 --
--- >>> :kind! Eval (Delete 7 =<< Empty)
--- Eval (Delete 7 =<< Empty) :: MapC TL.Natural v
--- = 'MapC '[]
--- data Delete :: k -> MapC k v -> Exp (MapC k v)
--- type instance Eval (Delete k ('MapC lst)) =
---     'MapC (Eval (Fcf.Filter (Not <=< TyEq k <=< Fst) lst))
-data DeleteExp :: k -> MapC k a -> Exp (MapC k a)
-type instance Eval (DeleteExp k map) = Delete k map
-
+-- >>> :kind! Delete 7 Empty
+-- Delete 7 Empty :: MapC Natural a
+-- = 'Tip
+--
 type Delete :: k -> MapC k a -> MapC k a
 type family Delete k map where
-  Delete _ 'Tip = Tip
+  Delete _ 'Tip = 'Tip
   Delete k ('Bin sx kx x l r) =
     Case '[ 'LT --> DeleteLTIf k ('Bin sx kx x l r) (Delete k l) l kx x r
           , 'GT --> DeleteGTIf k ('Bin sx kx x l r) (Delete k r) l kx x r
@@ -395,17 +401,17 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Adjust (AppendSymbol "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Adjust (AppendSymbol "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Adjust (AppendSymbol "new ") 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
 --                                                                                TL.Natural TL.Symbol
 -- = 'MapC '[ '(5, "new a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Adjust (AppendSymbol "new ") 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
 --                                                                                TL.Natural TL.Symbol
 -- = 'MapC '[ '(5, "a"), '(3, "b")]
 --
--- >>> :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< Empty)
+-- > :kind! Eval (Adjust (AppendSymbol "new ") 7 =<< Empty)
 -- Eval (Adjust (AppendSymbol "new ") 7 =<< Empty) :: MapC
 --                                                      TL.Natural TL.Symbol
 -- = 'MapC '[]
@@ -425,12 +431,12 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Lookup 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe
 --                                                          TL.Symbol
 -- = 'Just "a"
 --
--- >>> :kind! Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Lookup 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Maybe
 --                                                          TL.Symbol
 -- = 'Nothing
@@ -446,10 +452,10 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Member 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
--- >>> :kind! Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Member 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
 -- data Member :: k -> MapC k v -> Exp Bool
@@ -460,10 +466,10 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (NotMember 5 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
--- >>> :kind! Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (NotMember 7 =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'True
 -- data NotMember :: k -> MapC k v -> Exp Bool
@@ -474,10 +480,10 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Null =<< FromList '[ '(5,"a"), '(3,"b")]) :: Bool
 -- = 'False
--- >>> :kind! Eval (Null =<< Empty)
+-- > :kind! Eval (Null =<< Empty)
 -- Eval (Null =<< Empty) :: Bool
 -- = 'True
 -- data Null :: MapC k v -> Exp Bool
@@ -488,8 +494,8 @@ type family MaxViewSureCase k x l mv where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")])
--- Eval (Size =<< FromList '[ '(5,"a"), '(3,"b")]) :: TL.Natural
+-- >>> :kind! (Size (FromList '[ '(5,"a"), '(3,"b")]))
+-- (Size (FromList '[ '(5,"a"), '(3,"b")])) :: Natural
 -- = 2
 type Size :: MapC k v -> Nat
 type family Size map where
@@ -500,7 +506,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) )
+-- > :kind! Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) )
 -- Eval (Union (Eval (FromList '[ '(5,"a"), '(3,"b")])) (Eval (FromList '[ '(5,"A"), '(7,"c")])) ) :: MapC
 --                                                                                                      TL.Natural
 --                                                                                                      TL.Symbol
@@ -520,7 +526,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
+-- > :kind! Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Difference (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC
 --                                                                                                          TL.Natural
 --                                                                                                          TL.Symbol
@@ -539,7 +545,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
+-- > :kind! Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Intersection (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: MapC
 --                                                                                                            TL.Natural
 --                                                                                                            TL.Symbol
@@ -557,14 +563,14 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
+-- > :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")])))
 -- Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(5,"B"), '(7,"C")]))) :: Bool
 -- = 'False
 --
--- >>> :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(2,"B"), '(7,"C")])))
+-- > :kind! Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(2,"B"), '(7,"C")])))
 -- Eval (Disjoint (Eval (FromList '[ '(3,"a"), '(5,"b")])) (Eval (FromList '[ '(2,"B"), '(7,"C")]))) :: Bool
 -- = 'True
--- >>> :kind! Eval (Disjoint (Eval Empty) (Eval Empty))
+-- > :kind! Eval (Disjoint (Eval Empty) (Eval Empty))
 -- Eval (Disjoint (Eval Empty) (Eval Empty)) :: Bool
 -- = 'True
 -- data Disjoint :: MapC k v -> MapC k v -> Exp Bool
@@ -576,7 +582,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Fcf.Data.MapC.Map (AppendSymbol "x") =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Fcf.Data.MapC.Map (AppendSymbol "x") =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Fcf.Data.MapC.Map (AppendSymbol "x") =<< FromList '[ '(5,"a"), '(3,"b")]) :: MapC
 --                                                                                      TL.Natural
 --                                                                                      TL.Symbol
@@ -610,7 +616,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
+-- > :kind! Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)]))
 -- Eval (Fcf.Data.MapC.Foldr (+) 0  =<< (FromList '[ '(1,1), '(2,2)])) :: TL.Natural
 -- = 3
 -- data Foldr :: (v -> w -> Exp w) -> w -> MapC k v -> Exp w
@@ -621,10 +627,10 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Elems =<< FromList '[ '(5,"a"), '(3,"b")]) :: [TL.Symbol]
 -- = '["a", "b"]
--- >>> :kind! Eval (Elems =<< Empty)
+-- > :kind! Eval (Elems =<< Empty)
 -- Eval (Elems =<< Empty) :: [v]
 -- = '[]
 -- data Elems :: MapC k v -> Exp [v]
@@ -634,10 +640,10 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Keys =<< FromList '[ '(5,"a"), '(3,"b")]) :: [TL.Natural]
 -- = '[5, 3]
--- >>> :kind! Eval (Keys =<< Empty)
+-- > :kind! Eval (Keys =<< Empty)
 -- Eval (Keys =<< Empty) :: [k]
 -- = '[]
 -- data Keys :: MapC k v -> Exp [k]
@@ -647,11 +653,11 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (Assocs =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(TL.Natural,
 --                                                        TL.Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
--- >>> :kind! Eval (Assocs =<< Empty)
+-- > :kind! Eval (Assocs =<< Empty)
 -- Eval (Assocs =<< Empty) :: [(k, v)]
 -- = '[]
 -- data Assocs :: MapC k v -> Exp [(k,v)]
@@ -661,11 +667,11 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")])
+-- > :kind! Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")])
 -- Eval (ToList =<< FromList '[ '(5,"a"), '(3,"b")]) :: [(TL.Natural,
 --                                                        TL.Symbol)]
 -- = '[ '(5, "a"), '(3, "b")]
--- >>> :kind! Eval (ToList =<< Empty)
+-- > :kind! Eval (ToList =<< Empty)
 -- Eval (ToList =<< Empty) :: [(k, v)]
 -- = '[]
 -- data ToList :: MapC k v -> Exp [(k,v)]
@@ -675,7 +681,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
+-- > :kind! Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
 -- Eval (Filter ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: MapC
 --                                                                TL.Natural TL.Natural
 -- = 'MapC '[ '(3, 30)]
@@ -687,7 +693,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)])
+-- > :kind! Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)])
 -- Eval (FilterWithKey (>=) =<< FromList '[ '(3,5), '(6,4)]) :: MapC
 --                                                                TL.Natural TL.Natural
 -- = 'MapC '[ '(6, 4)]
@@ -699,7 +705,7 @@ type family Size map where
 --
 -- === __Example__
 --
--- >>> :kind! Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
+-- > :kind! Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)])
 -- Eval (Partition ((>=) 35) =<< FromList '[ '(5,50), '(3,30)]) :: (MapC
 --                                                                    TL.Natural TL.Natural,
 --                                                                  MapC TL.Natural TL.Natural)
