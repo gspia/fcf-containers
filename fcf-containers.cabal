@@ -107,6 +107,7 @@ test-suite fcf-test
                      , Test.Data
                      , Test.Data.Reflect
                      , Test.Data.Set
+                     , Test.Data.MapC
   build-depends:
       base
     , first-class-families
